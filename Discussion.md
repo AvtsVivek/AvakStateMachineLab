@@ -146,3 +146,171 @@ The distinction is about meaning, not just naming. A framework may use the word 
 `RecordingRequest` is appropriate because its values ask the recorder to perform operations, and `TryHandle` explicitly reports acceptance or rejection. Calling these inputs triggers is also reasonable when discussing the state machine. The existing code has not been renamed.
 
 The state graph in `200000_RecordingWithSwitch\recording-state-graph.svg` illustrates accepted transitions and rejected requests. Its dashed loops mean **no transition occurred**; they are not accepted self-transitions that exit and re-enter the same state.
+
+## 9. Where rules engines fit
+
+A state machine and a rules engine are related, but have different primary responsibilities:
+
+- **State pattern:** organizes state-dependent behavior into objects.
+- **State machine:** defines and executes valid progression between states over time.
+- **Rules engine:** evaluates conditions and policies against facts, potentially executing actions.
+
+### State progression versus policy evaluation
+
+Our recorder's state machine answers questions such as:
+
+- What state is the recorder in?
+- Does this trigger have a transition from the current state?
+- Which state comes next?
+- What entry and exit behavior should execute?
+
+A real recording policy might instead consider available disk space, device readiness, user permission, license validity, and temperature. These facts determine whether starting a recording is permitted, rather than defining the recording lifecycle itself.
+
+| Question | Primary responsibility |
+|---|---|
+| Can Pause take us from Recording to Paused? | State machine |
+| Is this user permitted to record? | Policy/rule evaluation |
+| Is sufficient storage available? | Policy/rule evaluation |
+| What happens when we enter Recording? | State-machine action |
+| Which discount applies to this customer? | Rules engine |
+| Where should Back navigation return? | Navigation/history logic |
+
+### Combining them through transition guards
+
+A **guard** is a condition that must pass before a transition is accepted:
+
+```text
+Source state + trigger + guard -> target state
+
+Idle + Start + CanStartRecording -> Recording
+```
+
+`CanStartRecording` could be a Boolean expression, an application method, a policy service, or a decision produced by a rules engine.
+
+```text
+Start trigger
+     |
+     v
+State machine finds Idle -> Recording
+     |
+     v
+Evaluate guard using current facts
+     |
+     +-- Not permitted --> Reject; remain Idle
+     |
+     +-- Permitted ------> Execute the transition
+```
+
+**A guard does not require a rules engine.** A simple method is usually sufficient until policies become numerous, complex, or independently maintained.
+
+### Microsoft RulesEngine
+
+[Microsoft RulesEngine](https://github.com/microsoft/RulesEngine) separates business rules and policies from core application logic.
+
+- Rules can be represented in JSON or created programmatically.
+- Expressions are evaluated against supplied inputs.
+- Evaluation returns results indicating which rules passed or failed.
+- It also supports actions, so it is not limited to returning Boolean decisions.
+
+A possible use is evaluating recording eligibility and identifying which conditions failed.
+
+**Terminology caution:** a named collection of rules is called a workflow. This does not, by itself, mean a persistent process moving through states such as Idle, Recording, and Paused.
+
+### NRules
+
+[NRules](https://github.com/NRules/NRules) is a production rules engine based on the Rete matching algorithm. Rules are authored using a C# domain-specific language (DSL).
+
+A production rule is a condition/action rule:
+
+```text
+WHEN matching facts exist
+THEN execute an action
+```
+
+NRules maintains facts in a session and matches rules against them. Actions can insert or update facts, making other rules applicable. This supports **forward chaining**: one rule's effects can lead to another rule firing.
+
+For example:
+
+```text
+Facts:
+    Storage is low
+    Recorder is recording
+
+Rule:
+    When both facts match,
+    request that recording stop
+```
+
+A useful boundary is for the rule to send a Stop trigger, leaving the state machine responsible for executing the valid transition.
+
+### Can a rules engine replace a state machine?
+
+A rules engine can encode transitions, for example:
+
+```text
+WHEN state is Recording AND request is Pause
+THEN set state to Paused
+```
+
+However, the application must still define which rule wins when several match, whether multiple transitions can execute for one input, entry and exit ordering, concurrent-input handling, action-failure behavior, hierarchy, and history. This amounts to implementing state-machine semantics on top of the rules engine.
+
+Conversely, putting every policy directly in state classes can make those classes difficult to maintain. Keeping lifecycle progression and policy evaluation separate can help when the application grows.
+
+### Implication for our exercises
+
+The current switch contains transition rules; the word "rules" does not mean a rules-engine library is needed. Do not introduce either library into the first exercise.
+
+A later learning exercise could add a `CanStartRecording` guard as a simple method, then compare a rules-engine implementation only if it demonstrates a real benefit. The libraries above are references for future study, not dependencies or architecture decisions for this repository.
+
+## 10. Defining transitions and placing guards
+
+A **transition** is a rule that says what the machine may do when a particular trigger arrives in a particular state. A useful general form is:
+
+```text
+Source state + Trigger [optional guard] -> Target state
+```
+
+For the recorder:
+
+```text
+Idle + Start -> Recording
+Recording + Pause -> Paused
+Recording + Stop -> Idle
+Paused + Resume -> Recording
+Paused + Stop -> Idle
+```
+
+For a guarded transition:
+
+```text
+Idle + Start [CanStartRecording] -> Recording
+```
+
+This means: when the recorder is `Idle` and receives `Start`, move to `Recording` only if `CanStartRecording` is true. If the guard is false, the transition is not taken and the recorder remains `Idle`.
+
+### Guard responsibilities
+
+A guard belongs to a **candidate transition**: it decides whether that transition is allowed given the current facts. The responsibilities are:
+
+- **State machine:** identifies the candidate transition and evaluates its guard.
+- **Guard:** answers whether this transition is allowed right now.
+- **Policy/domain logic:** supplies the reasoned decision, such as whether permission, device readiness, and storage requirements are satisfied.
+- **Transition action:** performs work associated with the transition after it is accepted.
+
+For a small example, the guard can be a condition in the state's switch case. As policy grows, it can become a named method or an injected policy service. Do not put side effects in a guard: it should decide, not start the recorder.
+
+The guard answers **"may we start?"**, not **"did the hardware successfully start?"** If starting hardware is asynchronous and can fail, use a `Starting` state and later success/failure triggers. Do not treat permission to start as proof that starting succeeded.
+
+### Mapping this to the current code
+
+In `Recorder.TryHandle`, each matching `case` represents a transition. For example:
+
+```csharp
+case RecordingState.Idle when request == RecordingRequest.Start:
+    CurrentState = RecordingState.Recording;
+    return true;
+```
+
+The case condition matches the current state and trigger; assigning `CurrentState` performs the transition. The `default` case rejects requests for which no transition is defined. The example currently has no separate domain guard: it accepts `Start` whenever the recorder is idle.
+
+As the model grows, keep the guard distinct from the transition action: the guard decides whether the transition may happen; the action performs associated work. Entry and exit behavior are related lifecycle behavior, but do not have to be part of the transition rule itself.

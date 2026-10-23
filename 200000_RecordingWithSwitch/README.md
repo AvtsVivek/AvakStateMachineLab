@@ -20,6 +20,17 @@ A recorder starts in `Idle`.
 
 Every other request is rejected, leaving the state unchanged. `TryHandle` returns `true` for acceptance and `false` for rejection. Rejection is an expected outcome, and the console reports it explicitly. Callers can read the current state but cannot assign it. Each recorder owns its state independently.
 
+A **transition** is a rule that permits a change from a source state to a target state for a particular trigger:
+
+```text
+Source state + trigger [optional guard] -> target state
+
+Idle + Start -> Recording
+Idle + Start [CanStartRecording] -> Recording
+```
+
+A **guard** is an optional condition on a candidate transition. The state machine checks it before changing state. If it is false, the transition is rejected and the current state stays the same. Guards decide whether a transition may happen; they should not perform side effects. This exercise has no separate guard: `Start` is accepted whenever the recorder is `Idle`.
+
 ## State graph
 
 Solid arrows show accepted transitions. Dashed self-loops show requests that are rejected without changing the current state.
