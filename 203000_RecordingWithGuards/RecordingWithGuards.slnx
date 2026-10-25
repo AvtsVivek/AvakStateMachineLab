@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="RecordingWithGuards.Tests/RecordingWithGuards.Tests.csproj" />
+  <Project Path="RecordingWithGuards/RecordingWithGuards.csproj" />
+</Solution>

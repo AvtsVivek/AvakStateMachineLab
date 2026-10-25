@@ -432,3 +432,32 @@ The current hook bodies are instrumentation, not realistic recording operations.
 Passing the reporting delegate as a method parameter was a simple educational choice. It could be supplied another way, and an application may not need a reporting callback at all. No API change is implied by this discussion.
 
 **Entry/exit hooks implement lifecycle behavior. The reporting delegate lets us observe that behavior.**
+
+## 15. Transition guards versus CanEnter and CanExit
+
+A guard is a permission check performed before a transition's lifecycle work. It should answer whether an action is permitted, not perform the action itself. Returning false rejects the request without exit, state replacement, or entry.
+
+`203000_RecordingWithGuards` injects a `Func<bool>` named `canStartRecording`. Only `Idle + Start -> Recording` evaluates it. The permission is checked afresh on each such request; it is not cached. Initial Idle entry, unrelated requests, and `Paused + Resume -> Recording` do not evaluate this guard.
+
+For an allowed Start, execution is:
+
+```text
+Check Start permission while Idle
+Exit Idle
+Replace active state with Recording
+Enter Recording
+```
+
+A denied Start leaves Idle active with no lifecycle activity. Changing permission allows a later retry. The boolean result deliberately does not distinguish an invalid state/request pair from a denied guard; richer rejection results are outside this lesson.
+
+The existing application's `CanExit` and `CanEnter` methods serve a related purpose at a different scope. Its transition coordinator checks source `CanExit`, then destination `CanEnter`, before running exit and entry. Parent and parallel-state checks can contribute to that decision.
+
+| Check | Scope |
+|---|---|
+| Transition guard | One source/request/destination combination, such as Idle + Start |
+| Source CanExit | Whether the source may be left through the coordinator |
+| Destination CanEnter | Whether the destination may be entered through the coordinator |
+
+A general Recording `CanEnter` permission would also affect Resume when the coordinator checks it for every arrival. Our requirement intentionally restricts only starting a new recording, not continuing a paused one, so a Start-specific guard is clearer. These approaches can coexist, and a guard does not require a dedicated transition object; here IdleState checks it before asking the recorder to transition.
+
+The permission delegate represents application policy, unlike the activity callback used for observation. A real application could obtain permission from an injected service. This exercise does not add a rules engine, hardware access, state-wide CanEnter/CanExit methods, or hierarchy. Policy exceptions propagate before lifecycle work and leave Idle active; nested requests from either callback are explicitly rejected. The previous lifecycle exception and no-rollback behavior remains unchanged.
