@@ -93,12 +93,12 @@ Visual Studio initially had the original prototype open. The new exercise soluti
 
 No commits were created.
 
-## 7. Next learning steps
+## 7. Learning progress and next steps
 
 1. Walk through `RecordingState.cs` and `RecordingRequest.cs`.
 2. Read `Recorder.cs` and trace how each current-state/request pair selects a transition.
-3. Add a dedicated test project and verify accepted transitions, rejected requests, and independent recorder instances.
-4. Create a later exercise implementing the same behavior with the State design pattern, then compare the two approaches.
+3. The tested switch-based checkpoint is now `200100_RecordingWithSwitchAndTests`; it verifies accepted transitions, rejected requests, initial state, and independent recorder instances.
+4. `201000_RecordingWithStatePattern` now contains a State-pattern implementation with the same observable behavior and a matching test matrix. Compare where each design puts its transition logic.
 5. Use one concrete navigation flow from the existing application as a later study exercise; introduce hierarchy or parallel states only when their behavior is understood and needed.
 
 ## 8. Requests, triggers, commands, and events
@@ -260,7 +260,7 @@ Conversely, putting every policy directly in state classes can make those classe
 
 The current switch contains transition rules; the word "rules" does not mean a rules-engine library is needed. Do not introduce either library into the first exercise.
 
-A later learning exercise could add a `CanStartRecording` guard as a simple method, then compare a rules-engine implementation only if it demonstrates a real benefit. The libraries above are references for future study, not dependencies or architecture decisions for this repository.
+The libraries above are references for future study, not dependencies or architecture decisions for this repository.
 
 ## 10. Defining transitions and placing guards
 
@@ -314,3 +314,18 @@ case RecordingState.Idle when request == RecordingRequest.Start:
 The case condition matches the current state and trigger; assigning `CurrentState` performs the transition. The `default` case rejects requests for which no transition is defined. The example currently has no separate domain guard: it accepts `Start` whenever the recorder is idle.
 
 As the model grows, keep the guard distinct from the transition action: the guard decides whether the transition may happen; the action performs associated work. Entry and exit behavior are related lifecycle behavior, but do not have to be part of the transition rule itself.
+
+## 11. Second exercise: Recording with a switch and tests
+
+Created the self-contained `200100_RecordingWithSwitchAndTests` checkpoint to keep the switch-based baseline intact while adding automated behavioral coverage.
+
+- `RecordingWithSwitchAndTests.slnx` is the exercise solution.
+- `RecordingWithSwitch` is the .NET 10 console project containing the recorder and demonstration.
+- `RecordingWithSwitch.Tests` is the MSTest project and references the recorder project.
+- The exercise README documents the behavior and commands.
+
+The 14 test cases cover the initial `Idle` state, all five allowed transitions, all seven rejected state/request pairs, and independence of separate recorder instances. The production transition logic remains the same switch-based design as the first exercise.
+
+The solution is open in Visual Studio. The solution build succeeded, and both direct project testing and solution-level `dotnet test` passed all 14 tests. Visual Studio Test Explorer also discovered and passed all 14 tests.
+
+The next planned implementation exercise is `210000_RecordingWithStatePattern`, using the same behavior so the two designs can be compared.

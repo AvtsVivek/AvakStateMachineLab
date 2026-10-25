@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="RecordingWithSwitch.Tests/RecordingWithSwitch.Tests.csproj" />
+  <Project Path="RecordingWithSwitch/RecordingWithSwitch.csproj" />
+</Solution>
