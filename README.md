@@ -8,3 +8,4 @@ Exercises are self-contained and ordered by six-digit prefixes, with gaps for in
 - **200000_RecordingWithSwitch**: model a recorder using enums and a switch before introducing the State pattern. Open `200000_RecordingWithSwitch\RecordingWithSwitch.slnx` to begin.
 - **200100_RecordingWithSwitchAndTests**: repeat the switch-based recorder exercise with MSTest coverage for accepted transitions, rejected requests, and independent instances. Open `200100_RecordingWithSwitchAndTests\RecordingWithSwitchAndTests.slnx`.
 - **201000_RecordingWithStatePattern**: implement the recorder behavior with state objects and compare it with the switch-based version. Open `201000_RecordingWithStatePattern\RecordingWithStatePattern.slnx`.
+- **202000_RecordingWithEntryAndExit**: add state lifecycle hooks and verify exact execution order with an in-memory trace. Open `202000_RecordingWithEntryAndExit\RecordingWithEntryAndExit.slnx`.

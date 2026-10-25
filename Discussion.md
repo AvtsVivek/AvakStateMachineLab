@@ -328,4 +328,107 @@ The 14 test cases cover the initial `Idle` state, all five allowed transitions, 
 
 The solution is open in Visual Studio. The solution build succeeded, and both direct project testing and solution-level `dotnet test` passed all 14 tests. Visual Studio Test Explorer also discovered and passed all 14 tests.
 
-The next planned implementation exercise is `210000_RecordingWithStatePattern`, using the same behavior so the two designs can be compared.
+The State-pattern implementation is now in `201000_RecordingWithStatePattern`, using the same behavior so the two designs can be compared.
+
+## 12. Why keep RecordingMode alongside state classes?
+
+The State-pattern exercise has a one-to-one mapping between its concrete state classes and the public enum:
+
+| Behavioral state object | Public mode |
+|---|---|
+| `IdleState` | `RecordingMode.Idle` |
+| `RecordingState` | `RecordingMode.Recording` |
+| `PausedState` | `RecordingMode.Paused` |
+
+**The enum is not required by the State pattern.** It is intentional duplication for observability: state objects implement behavior, while the enum describes the current mode to callers.
+
+### Behavior versus observation
+
+The recorder owns the actual state object:
+
+```csharp
+private IRecorderState _currentState = new IdleState();
+```
+
+Request handling is delegated to that object:
+
+```csharp
+return _currentState.TryHandle(this, request);
+```
+
+The public property reports a value derived from that same object:
+
+```csharp
+public RecordingMode CurrentState => _currentState.Mode;
+```
+
+There are not two independently stored current states. The enum value is derived from the active state object, so no separate enum field needs to be synchronized. However, adding a new state may still require adding an enum member and its mapping. This is a real maintenance trade-off, and an incorrect mapping could misreport the mode.
+
+### Purpose in this learning exercise
+
+The enum gives the console and tests a simple, strongly typed observation without exposing the implementation objects:
+
+```csharp
+Assert.AreEqual(RecordingMode.Paused, recorder.CurrentState);
+```
+
+`IRecorderState` and its implementations remain internal. Callers can observe what the recorder is doing without receiving objects that implement its behavior. This also lets both recording exercises be checked against the same observable transition expectations without asserting concrete implementation types.
+
+### Alternatives
+
+- **Expose the state object:** callers could inspect its type, but this would expose implementation details. Making the current `IRecorderState` public would also expose its request-handling method; callers should normally send requests through `Recorder`. Do not expose this interface solely to remove the enum.
+- **Expose a descriptive name:** useful for diagnostics and console output, but strings lose compile-time checking and are brittle if callers use them for application logic.
+- **Do not expose the complete state:** some APIs provide operations, results, events, or observations such as `IsRecording` instead. This is reasonable when consumers do not need to know the full internal state model, although it makes this exercise less direct to inspect.
+
+A richer design need not have a one-to-one mapping: several internal states could report the same public mode. That is a possible future use, not a requirement of this example.
+
+### Naming and conclusion
+
+`CurrentMode` would be clearer than `CurrentState` for the existing enum-valued property because it returns a public description rather than the active state object. This is a naming suggestion only; the code has not been renamed.
+
+**The state object decides behavior. The enum reports the current mode.** Removing the enum would not remove the State pattern; we would simply choose another observation mechanism or expose no mode at all.
+
+## 13. Entry, exit, and in-memory execution traces
+
+`202000_RecordingWithEntryAndExit` extends the State-pattern example while preserving its five transitions and seven rejected pairs. Construction enters Idle once. Each accepted transition exits the source, replaces the active object, and enters the destination. Rejection runs neither hook.
+
+The recorder accepts an `Action<string>` callback. Entry and exit methods report their activity through it. The console passes `Console.WriteLine`, but tests pass a list's `Add` method, avoiding console capture, shared console state, and presentation-dependent assertions.
+
+For Pause while recording, the expected trace is exactly:
+
+```text
+Exit Recording
+Enter Paused
+```
+
+An ordered sequence assertion detects missing, duplicate, reversed, or unexpected actions. Tests clear setup activity before checking an individual request. Separate tests check initial entry, revisits, rejected requests, and independent instances.
+
+The two messages alone establish exit/entry order, not when state replacement occurred. The accepted-transition tests also read the public mode inside the callback and assert that exit observes the source while entry observes the destination.
+
+This is a learning execution trace, not a production logging framework. Callbacks run synchronously. Nested requests are explicitly rejected, and callback exceptions propagate without rollback; exit failure leaves the source active and entry failure leaves the target active. There is no domain guard, thread-safety guarantee, or asynchronous recovery protocol. See the exercise README for run instructions and the full scope.
+
+## 14. Why do Enter and Exit take an Action delegate?
+
+The `Action<string>` parameter primarily makes lifecycle execution observable in this exercise. It supports both testing and the console demonstration; it is not required by the State pattern or by entry/exit methods.
+
+```csharp
+public void Enter(Action<string> reportActivity)
+    => reportActivity("Enter Idle");
+```
+
+`Enter` is the lifecycle action; `reportActivity` reports that the action ran. It is not the entry action itself.
+
+| Caller | Callback | Purpose |
+|---|---|---|
+| Console demonstration | `Console.WriteLine` | Display the lifecycle sequence |
+| Tests | `activities.Add` | Capture the actual sequence for assertions |
+
+Without hardware or UI dependencies, these activity messages give the hooks small, visible behavior so their execution order can be studied. Injecting the callback also avoids hard-coding console output into state classes.
+
+Real lifecycle behavior could subscribe to events or activate state-specific resources on entry, then unsubscribe or release resources on exit. Methods may be parameterless `Enter()` and `Exit()`, with dependencies supplied through constructors or a context. The existing application studied earlier uses entry/exit methods for actual work such as event subscriptions and UI state changes.
+
+The current hook bodies are instrumentation, not realistic recording operations. Tests establish when the hooks execute and the active mode during execution; they do not establish that recording resources were actually started or released.
+
+Passing the reporting delegate as a method parameter was a simple educational choice. It could be supplied another way, and an application may not need a reporting callback at all. No API change is implied by this discussion.
+
+**Entry/exit hooks implement lifecycle behavior. The reporting delegate lets us observe that behavior.**

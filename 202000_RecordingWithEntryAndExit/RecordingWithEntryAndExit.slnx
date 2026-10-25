@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="RecordingWithEntryAndExit.Tests/RecordingWithEntryAndExit.Tests.csproj" />
+  <Project Path="RecordingWithEntryAndExit/RecordingWithEntryAndExit.csproj" />
+</Solution>
