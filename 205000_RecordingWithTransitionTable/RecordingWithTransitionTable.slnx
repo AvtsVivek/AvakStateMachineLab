@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="RecordingWithTransitionTable.Tests/RecordingWithTransitionTable.Tests.csproj" />
+  <Project Path="RecordingWithTransitionTable/RecordingWithTransitionTable.csproj" />
+</Solution>

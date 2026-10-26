@@ -10,3 +10,5 @@ Exercises are self-contained and ordered by six-digit prefixes, with gaps for in
 - **201000_RecordingWithStatePattern**: implement the recorder behavior with state objects and compare it with the switch-based version. Open `201000_RecordingWithStatePattern\RecordingWithStatePattern.slnx`.
 - **202000_RecordingWithEntryAndExit**: add state lifecycle hooks and verify exact execution order with an in-memory trace. Open `202000_RecordingWithEntryAndExit\RecordingWithEntryAndExit.slnx`.
 - **203000_RecordingWithGuards**: guard Start with an injected permission check before lifecycle actions, without restricting Resume. Open `203000_RecordingWithGuards\RecordingWithGuards.slnx`.
+- **204000_RecordingWithTransitionResults**: distinguish successful transitions, invalid requests, and guard denial with a typed result. Open `204000_RecordingWithTransitionResults\RecordingWithTransitionResults.slnx`.
+- **205000_RecordingWithTransitionTable**: express the same state/request/target rules as centralized data while keeping the transition guard and lifecycle behavior. Open `205000_RecordingWithTransitionTable\RecordingWithTransitionTable.slnx`.

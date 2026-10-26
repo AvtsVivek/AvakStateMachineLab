@@ -461,3 +461,37 @@ The existing application's `CanExit` and `CanEnter` methods serve a related purp
 A general Recording `CanEnter` permission would also affect Resume when the coordinator checks it for every arrival. Our requirement intentionally restricts only starting a new recording, not continuing a paused one, so a Start-specific guard is clearer. These approaches can coexist, and a guard does not require a dedicated transition object; here IdleState checks it before asking the recorder to transition.
 
 The permission delegate represents application policy, unlike the activity callback used for observation. A real application could obtain permission from an injected service. This exercise does not add a rules engine, hardware access, state-wide CanEnter/CanExit methods, or hierarchy. Policy exceptions propagate before lifecycle work and leave Idle active; nested requests from either callback are explicitly rejected. The previous lifecycle exception and no-rollback behavior remains unchanged.
+
+## 16. Reporting transition outcomes
+
+In `203000_RecordingWithGuards`, `TryHandle` returns `bool`. `false` means either that the request has no transition in the current state or that the Start guard denied it. When callers need to react differently to those cases, a boolean loses useful information.
+
+`204000_RecordingWithTransitionResults` returns a small `TransitionResult` enum:
+
+| Result | Meaning |
+|---|---|
+| `Transitioned` | The request was valid, any applicable guard passed, and lifecycle work completed. |
+| `InvalidRequest` | There is no transition for this request in the current state. |
+| `GuardDenied` | A transition exists, but its guard refused it. |
+
+For example, Idle + Pause returns `InvalidRequest`, while Idle + Start with permission denied returns `GuardDenied`. Both leave Idle active and run no lifecycle hooks, but the result explains why. A successful Start returns `Transitioned` after exit and entry complete.
+
+Exceptions remain exceptions: a throwing guard or lifecycle callback is not translated to one of the enum values. This avoids treating an operational failure as an ordinary domain rejection. The result also does not carry arbitrary text or diagnostic details; add a richer result object only when a real caller needs that information.
+
+The result type does not centralize the rules. Each state still handles its own requests and returns the appropriate outcome, while the recorder continues coordinating exit, replacement, and entry. The new exercise preserves the transitions and guard scope so the result contract is the only conceptual change.
+
+## 17. State-owned transitions versus a centralized transition table
+
+`204000_RecordingWithTransitionResults` keeps transition decisions in state classes. Idle recognizes Start, checks permission, and chooses Recording; the other states handle their own requests. This keeps each state's behavior together, and the context focuses on shared coordination.
+
+`205000_RecordingWithTransitionTable` moves the valid source/request/target combinations into a central table. For example, a row records `Idle + Start -> Recording` and marks that it requires the Start permission guard. State objects still own lifecycle hooks, and the recorder still coordinates exit, replacement, and entry. The table changes where transition rules are declared, not the transition semantics.
+
+| State-owned rules | Centralized transition table |
+|---|---|
+| Each state handles requests it accepts. | Rows list source, request, target, and applicable guard. |
+| State behavior and transition choices stay together. | The complete transition graph is easy to inspect in one place. |
+| Adding behavior may involve modifying a specific state. | Adding transition metadata may be direct, but table dispatch and state construction also need care. |
+
+Both approaches retain the same `TransitionResult` distinctions, five accepted transitions, seven invalid pairs, Start-only guard, and lifecycle ordering. The guard is metadata on just the Idle + Start row, not a general Recording-entry restriction, so Resume remains permitted when Start permission is false.
+
+A table is useful when rules are small and benefit from being inspected as data. As complexity grows, conditions, priorities, hierarchy, dynamic targets, and actions can make the table's dispatch logic complicated. A table does not automatically make a state machine simpler, and it need not become a generic framework. Compare the exercise implementation with `204000` and notice which change is data organization versus behavior.
