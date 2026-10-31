@@ -7,8 +7,8 @@ internal sealed class PausedState : IRecorderState
     public RecordingMode Mode => RecordingMode.Paused;
 
     /// <inheritdoc />
-    public void Enter(Action<string> reportActivity) => reportActivity("Enter Paused");
+    public void Enter(Action<string> reportActivity) => reportActivity($"Enter {Mode}");
 
     /// <inheritdoc />
-    public void Exit(Action<string> reportActivity) => reportActivity("Exit Paused");
+    public void Exit(Action<string> reportActivity) => reportActivity($"Exit {Mode}");
 }

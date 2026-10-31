@@ -7,10 +7,10 @@ internal sealed class RecordingState : IRecorderState
     public RecordingMode Mode => RecordingMode.Recording;
 
     /// <inheritdoc />
-    public void Enter(Action<string> reportActivity) => reportActivity("Enter Recording");
+    public void Enter(Action<string> reportActivity) => reportActivity($"Enter {Mode}");
 
     /// <inheritdoc />
-    public void Exit(Action<string> reportActivity) => reportActivity("Exit Recording");
+    public void Exit(Action<string> reportActivity) => reportActivity($"Exit {Mode}");
 
     /// <inheritdoc />
     public TransitionResult TryHandle(Recorder recorder, RecordingRequest request)

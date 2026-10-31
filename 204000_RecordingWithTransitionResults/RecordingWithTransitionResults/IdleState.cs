@@ -7,10 +7,10 @@ internal sealed class IdleState : IRecorderState
     public RecordingMode Mode => RecordingMode.Idle;
 
     /// <inheritdoc />
-    public void Enter(Action<string> reportActivity) => reportActivity("Enter Idle");
+    public void Enter(Action<string> reportActivity) => reportActivity($"Enter {Mode}");
 
     /// <inheritdoc />
-    public void Exit(Action<string> reportActivity) => reportActivity("Exit Idle");
+    public void Exit(Action<string> reportActivity) => reportActivity($"Exit {Mode}");
 
     /// <inheritdoc />
     public TransitionResult TryHandle(Recorder recorder, RecordingRequest request)
