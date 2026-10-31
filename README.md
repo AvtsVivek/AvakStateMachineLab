@@ -12,3 +12,4 @@ Exercises are self-contained and ordered by six-digit prefixes, with gaps for in
 - **203000_RecordingWithGuards**: guard Start with an injected permission check before lifecycle actions, without restricting Resume. Open `203000_RecordingWithGuards\RecordingWithGuards.slnx`.
 - **204000_RecordingWithTransitionResults**: distinguish successful transitions, invalid requests, and guard denial with a typed result. Open `204000_RecordingWithTransitionResults\RecordingWithTransitionResults.slnx`.
 - **205000_RecordingWithTransitionTable**: express the same state/request/target rules as centralized data while keeping the transition guard and lifecycle behavior. Open `205000_RecordingWithTransitionTable\RecordingWithTransitionTable.slnx`.
+- **206000_RecordingWithHierarchy**: put Recording and Paused inside a RecordingSession composite and study parent lifecycle and permission checks. Open `206000_RecordingWithHierarchy\RecordingWithHierarchy.slnx`.

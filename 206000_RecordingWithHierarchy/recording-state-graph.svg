@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 940" role="img" aria-labelledby="title description">
+  <title id="title">Recorder hierarchy and transition graph</title>
+  <desc id="description">Initially Idle. Start enters RecordingSession and its Recording child. Pause and Resume switch between Recording and Paused without leaving the parent. Stop from either child exits the child and RecordingSession and returns to Idle. Exactly one child is active while the session is active. Permission checks happen before lifecycle hooks; denied or invalid requests run no hooks and leave the state unchanged.</desc>
+  <defs>
+	<marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+	  <path d="M 0 0 L 10 4 L 0 8 z" fill="#334155" />
+	</marker>
+	<style>
+	  text { font-family: "Segoe UI", Arial, sans-serif; fill: #172033; }
+	  .edge { fill: none; stroke: #334155; stroke-width: 2.5; marker-end: url(#arrow); }
+	  .state { fill: #eff6ff; stroke: #2563eb; stroke-width: 2.5; }
+	  .parent { fill: #f0fdf4; stroke: #15803d; stroke-width: 2.5; }
+	  .heading { font-size: 24px; font-weight: 600; }
+	  .name { font-size: 22px; font-weight: 600; text-anchor: middle; }
+	  .label { font-size: 17px; font-weight: 600; text-anchor: middle; paint-order: stroke; stroke: #fff; stroke-width: 5px; stroke-linejoin: round; }
+	  .note { font-size: 16px; fill: #475569; }
+	  .small { font-size: 15px; fill: #475569; text-anchor: middle; }
+	  .panel { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1.5; }
+	</style>
+  </defs>
+
+  <rect width="1100" height="940" fill="#fff" />
+  <text class="heading" x="40" y="42">Recording with hierarchy</text>
+  <text class="note" x="40" y="72">An exclusive composite: one active child, not parallel Recording and Paused states.</text>
+
+  <rect class="parent" x="360" y="110" width="690" height="410" rx="24" />
+  <text class="heading" x="390" y="150">RecordingSession</text>
+  <text class="note" x="390" y="180">Parent stays active during Pause and Resume.</text>
+
+  <rect class="state" x="70" y="210" width="160" height="110" rx="18" />
+  <text class="name" x="150" y="257">Idle</text>
+  <text class="small" x="150" y="286">Outside the session</text>
+  <rect class="state" x="470" y="210" width="160" height="90" rx="18" />
+  <text class="name" x="550" y="263">Recording</text>
+  <rect class="state" x="820" y="210" width="160" height="90" rx="18" />
+  <text class="name" x="900" y="263">Paused</text>
+
+  <circle cx="30" cy="265" r="7" fill="#334155" />
+  <path class="edge" d="M 37 265 L 70 265" />
+  <text class="small" x="55" y="196">Initial</text>
+
+  <path id="start" class="edge" d="M 230 250 L 470 250" />
+  <text class="label" x="345" y="234">Start</text>
+
+  <path id="pause" class="edge" d="M 630 235 L 820 235" />
+  <text class="label" x="725" y="220">Pause</text>
+  <path id="resume" class="edge" d="M 820 280 L 630 280" />
+  <text class="label" x="725" y="307">Resume</text>
+
+  <path id="stop-recording" class="edge" d="M 550 300 L 550 415 Q 550 435 530 435 L 220 435 Q 200 435 200 415 L 200 320" />
+  <text class="label" x="345" y="425">Stop from Recording</text>
+
+  <path id="stop-paused" class="edge" d="M 900 300 L 900 550 Q 900 570 880 570 L 130 570 Q 110 570 110 550 L 110 320" />
+  <text class="label" x="540" y="560">Stop from Paused</text>
+
+  <text class="small" x="740" y="373">Pause / Resume: exit source child, enter target child.</text>
+  <text class="small" x="740" y="399">No parent Exit or Enter hook runs.</text>
+
+  <rect class="panel" x="40" y="610" width="1020" height="126" rx="12" />
+  <text class="heading" x="60" y="644">Lifecycle order</text>
+  <text class="note" x="60" y="672">Start: Exit Idle -&gt; Enter RecordingSession -&gt; Enter Recording</text>
+  <text class="note" x="60" y="698">Stop: Exit active child -&gt; Exit RecordingSession -&gt; Enter Idle</text>
+  <text class="note" x="60" y="724">Solid arrows are accepted transitions after all applicable permission checks pass.</text>
+
+  <rect class="panel" x="40" y="752" width="1020" height="166" rx="12" />
+  <text class="heading" x="60" y="786">Permission checks (before any lifecycle hooks)</text>
+  <text class="note" x="60" y="814">Start: canStartRecording -&gt; canEnterSession</text>
+  <text class="note" x="60" y="840">Pause / Resume: canExitSession -&gt; canEnterSession. Stop: canExitSession only.</text>
+  <text class="note" x="60" y="866">Checks stop at the first denial. Resume never checks canStartRecording.</text>
+  <text class="note" x="60" y="892">Denied: GuardDenied. Undefined pair: InvalidRequest. Both leave state unchanged with no hooks.</text>
+</svg>

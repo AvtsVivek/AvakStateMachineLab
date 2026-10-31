@@ -495,3 +495,24 @@ The result type does not centralize the rules. Each state still handles its own 
 Both approaches retain the same `TransitionResult` distinctions, five accepted transitions, seven invalid pairs, Start-only guard, and lifecycle ordering. The guard is metadata on just the Idle + Start row, not a general Recording-entry restriction, so Resume remains permitted when Start permission is false.
 
 A table is useful when rules are small and benefit from being inspected as data. As complexity grows, conditions, priorities, hierarchy, dynamic targets, and actions can make the table's dispatch logic complicated. A table does not automatically make a state machine simpler, and it need not become a generic framework. Compare the exercise implementation with `204000` and notice which change is data organization versus behavior.
+
+## 18. Exclusive composite states and parent permissions
+
+`206000_RecordingWithHierarchy` adds an exclusive composite called `RecordingSession`. While the parent is active, exactly one child is active: `Recording` or `Paused`. This is a teaching model for hierarchical state behavior; it is not a claim that ExecUI contains this specific recorder tree.
+
+The lifecycle trace makes the hierarchy visible:
+
+```text
+Start: Exit Idle -> Enter RecordingSession -> Enter Recording
+Pause: Exit Recording -> Enter Paused
+Resume: Exit Paused -> Enter Recording
+Stop: Exit Recording -> Exit RecordingSession -> Enter Idle
+```
+
+Pause and Resume replace only the child. The parent session remains active and its Enter/Exit hooks do not run again. Stop leaves the composite, so the active child exits before its parent. The public mode reports the active leaf; the `RecordingSession` name appears in the lifecycle trace.
+
+The exercise separately injects a Start-specific permission, plus parent-level `CanEnter` and `CanExit` policies. Parent entry/exit permission is checked on transitions involving a child, even when the parent itself stays active. For example, Pause checks whether the active child may leave and whether the target child may enter; denying either check blocks the child change before lifecycle hooks. These parent checks are re-evaluated on each applicable request. The Start-specific check is only for beginning a new session and is not called by Resume.
+
+This mirrors the delegation shape in ExecUI's `StateBase.CanEnter` and `CanExit`, where a child delegates the check to its parent, and the state-machine coordinator checks permissions before lifecycle work. It intentionally distinguishes permission evaluation from parent lifecycle: permission may be checked during an internal child transition while parent Enter/Exit remains untouched.
+
+Do not confuse this exclusive composite with ExecUI's `ParallelStateBase`, which can represent multiple active substates. The exercise's RecordingSession has exactly one active child. It introduces only one level of hierarchy, synchronous hooks, and simple injected policies; it is not a general state-machine framework.

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="RecordingWithHierarchy.Tests/RecordingWithHierarchy.Tests.csproj" />
+  <Project Path="RecordingWithHierarchy/RecordingWithHierarchy.csproj" />
+</Solution>
