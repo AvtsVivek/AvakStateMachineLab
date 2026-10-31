@@ -1,5 +1,6 @@
 namespace RecordingWithSwitch;
 
+[System.Diagnostics.DebuggerDisplay("CurrentState = {CurrentState}")]
 public sealed class Recorder
 {
     public RecordingState CurrentState { get; private set; } = RecordingState.Idle;

@@ -53,4 +53,4 @@ The enum is optional; it is not required by the State pattern. The state objects
 
 Alternatives include exposing a descriptive name, exposing a read-only state view, or reporting only meaningful observations such as `IsRecording`. Exposing the existing behavioral interface solely for observation would unnecessarily reveal implementation details.
 
-`CurrentMode` would better describe the enum-valued property, but this discussion does not rename the current API. See section 12 of the root `Discussion.md` for the detailed rationale and alternatives.
+`CurrentMode` would better describe the enum-valued property, but this discussion does not rename the current API. See [section 12 of the root Discussion.md](../Discussion.md#12-why-keep-recordingmode-alongside-state-classes) for the detailed rationale and alternatives.

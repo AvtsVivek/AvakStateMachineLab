@@ -16,10 +16,13 @@ public sealed class RecorderLifecycleTests
     [TestMethod]
     public void NewRecorder_EntersIdleOnce()
     {
+        // Arrange
         List<string> activities = [];
 
+        // Act
         Recorder recorder = new(activities.Add);
 
+        // Assert
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         CollectionAssert.AreEqual(new[] { "Enter Idle" }, activities);
     }
@@ -41,6 +44,7 @@ public sealed class RecorderLifecycleTests
     public void AllowedRequest_ExitsSourceThenEntersTarget(
         RecordingMode source, RecordingRequest request, RecordingMode target)
     {
+        // Arrange
         List<(string Activity, RecordingMode? Mode)> observations = [];
         Recorder? recorder = null;
         recorder = new(activity => observations.Add((activity, recorder?.CurrentState)));
@@ -48,8 +52,10 @@ public sealed class RecorderLifecycleTests
         // Construction invokes the callback before assignment completes; only this transition is under test.
         observations.Clear();
 
+        // Act
         bool accepted = recorder.TryHandle(request);
 
+        // Assert
         Assert.IsTrue(accepted);
         Assert.AreEqual(target, recorder.CurrentState);
         (string Activity, RecordingMode? Mode)[] expected =
@@ -73,13 +79,16 @@ public sealed class RecorderLifecycleTests
     [DataRow(RecordingMode.Paused, RecordingRequest.Pause)]
     public void DisallowedRequest_RunsNoLifecycleActions(RecordingMode source, RecordingRequest request)
     {
+        // Arrange
         List<string> activities = [];
         Recorder recorder = new(activities.Add);
         MoveTo(recorder, source);
         activities.Clear();
 
+        // Act
         bool accepted = recorder.TryHandle(request);
 
+        // Assert
         Assert.IsFalse(accepted);
         Assert.AreEqual(source, recorder.CurrentState);
         Assert.IsEmpty(activities);
@@ -89,14 +98,17 @@ public sealed class RecorderLifecycleTests
     [TestMethod]
     public void StartPauseResumeStop_RecordsExactLifecycleSequence()
     {
+        // Arrange
         List<string> activities = [];
         Recorder recorder = new(activities.Add);
 
+        // Act & Assert
         Assert.IsTrue(recorder.TryHandle(RecordingRequest.Start));
         Assert.IsTrue(recorder.TryHandle(RecordingRequest.Pause));
         Assert.IsTrue(recorder.TryHandle(RecordingRequest.Resume));
         Assert.IsTrue(recorder.TryHandle(RecordingRequest.Stop));
 
+        // Assert
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         CollectionAssert.AreEqual(
             new[]
@@ -114,6 +126,7 @@ public sealed class RecorderLifecycleTests
     [TestMethod]
     public void RecorderInstances_KeepStatesAndActivityIndependent()
     {
+        // Arrange
         List<string> firstActivities = [];
         List<string> secondActivities = [];
         Recorder first = new(firstActivities.Add);
@@ -121,8 +134,10 @@ public sealed class RecorderLifecycleTests
         firstActivities.Clear();
         secondActivities.Clear();
 
+        // Act
         bool accepted = first.TryHandle(RecordingRequest.Start);
 
+        // Assert
         Assert.IsTrue(accepted);
         Assert.AreEqual(RecordingMode.Recording, first.CurrentState);
         Assert.AreEqual(RecordingMode.Idle, second.CurrentState);
@@ -134,8 +149,10 @@ public sealed class RecorderLifecycleTests
     [TestMethod]
     public void NullActivityCallback_ThrowsArgumentNullException()
     {
+        // Act & Assert
         ArgumentNullException exception = Assert.ThrowsExactly<ArgumentNullException>(() => new Recorder(null!));
 
+        // Assert
         Assert.AreEqual("reportActivity", exception.ParamName);
     }
 
@@ -147,6 +164,7 @@ public sealed class RecorderLifecycleTests
     [DataRow("Enter Paused", RecordingMode.Paused)]
     public void LifecycleCallbackFailure_PropagatesWithoutRollback(string failingActivity, RecordingMode expectedMode)
     {
+        // Arrange
         List<string> activities = [];
         InvalidOperationException failure = new("Activity observer failed.");
         Recorder recorder = new(activity =>
@@ -160,9 +178,11 @@ public sealed class RecorderLifecycleTests
         Assert.IsTrue(recorder.TryHandle(RecordingRequest.Start));
         activities.Clear();
 
+        // Act & Assert
         InvalidOperationException actual = Assert.ThrowsExactly<InvalidOperationException>(
             () => recorder.TryHandle(RecordingRequest.Pause));
 
+        // Assert
         Assert.AreSame(failure, actual);
         Assert.AreEqual(expectedMode, recorder.CurrentState);
         string[] expected = failingActivity == "Exit Recording"
@@ -175,6 +195,7 @@ public sealed class RecorderLifecycleTests
     [TestMethod]
     public void NestedRequestFromCallback_ThrowsAndAllowsLaterRequest()
     {
+        // Arrange
         List<string> activities = [];
         Recorder? recorder = null;
         bool sendNestedRequest = true;
@@ -188,13 +209,17 @@ public sealed class RecorderLifecycleTests
             }
         });
 
+        // Act & Assert
         Assert.ThrowsExactly<InvalidOperationException>(() => recorder.TryHandle(RecordingRequest.Start));
 
+        // Assert
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         CollectionAssert.AreEqual(new[] { "Enter Idle", "Exit Idle" }, activities);
         sendNestedRequest = false;
         activities.Clear();
+        // Act & Assert
         Assert.IsTrue(recorder.TryHandle(RecordingRequest.Start));
+        // Assert
         Assert.AreEqual(RecordingMode.Recording, recorder.CurrentState);
         CollectionAssert.AreEqual(new[] { "Exit Idle", "Enter Recording" }, activities);
     }

@@ -50,7 +50,13 @@ This deliberately mirrors the delegation shape of ExecUI's child `CanEnter`/`Can
 - `Recorder` validates requests, evaluates the Start guard and parent permissions, and coordinates top-level transitions.
 - `TransitionResult` distinguishes successful transitions, invalid requests, and policy denial.
 
-This is a single composite level with a single active child. It is **not** the same as ExecUI's `ParallelStateBase`, which can represent multiple active substates.
+### Lazy session construction
+
+The recorder starts with only Idle; it does not construct `RecordingSessionState` in its constructor. Reading `CurrentState`, invalid requests, denied Start permissions, and throwing permission checks do not create the session. On the first permitted Start, the recorder evaluates `canStartRecording` and `canEnterSession`, creates the composite, then runs Exit Idle, Enter RecordingSession, and Enter Recording. The entry policy is evaluated directly before construction, rather than constructing an object just to call its policy method.
+
+Stop deactivates the composite but retains its object for reuse on later permitted Starts. Both permissions are still evaluated afresh on each Start; caching the object does not cache permission or keep a child active. Construction is not the same as lifecycle entry, so creating the object does not itself run any hooks. This is simple single-threaded deferred initialization, not a need for `Lazy<T>` or resource management.
+
+This is a single composite level with a single active child.
 
 ## Run
 
@@ -93,7 +99,7 @@ Stop after parent CanExit is allowed: Transitioned; state: Idle
 
 ## Tests
 
-The 30 deterministic MSTest cases verify the full lifecycle trace and mode observed during hooks, all accepted and invalid requests, unknown request values, Start and parent permission denial, parent checks on internal child changes, Resume's independence from the Start guard, permission re-evaluation, propagated permission exceptions, reentrancy rejection, null dependencies, and instance independence.
+The 31 deterministic MSTest cases verify the full lifecycle trace and mode observed during hooks, all accepted and invalid requests, unknown request values, Start and parent permission denial, parent checks on internal child changes, Resume's independence from the Start guard, permission re-evaluation, propagated permission exceptions, reentrancy rejection, null dependencies, and instance independence. A focused initialization test inspects the private session reference to verify deferred allocation and object reuse directly; lifecycle traces alone cannot establish allocation timing.
 
 ## Deliberate limits
 

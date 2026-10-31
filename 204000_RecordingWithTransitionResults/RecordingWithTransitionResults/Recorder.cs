@@ -6,6 +6,7 @@ namespace RecordingWithTransitionResults;
 /// Lifecycle exceptions propagate without rollback: exit failure leaves the source active,
 /// while entry failure leaves the target active.
 /// </remarks>
+[System.Diagnostics.DebuggerDisplay("CurrentState = {CurrentState}")]
 public sealed class Recorder
 {
     private readonly Func<bool> _canStartRecording;

@@ -33,7 +33,7 @@ For an accepted Start, the order is **guard -> Exit Idle -> replace state -> Ent
 
 They are related permission checks, but their scope differs. A coordinator can check source `CanExit` and destination `CanEnter` for every transition. A transition guard instead restricts a particular source/request/destination combination.
 
-Putting our permission in a general Recording `CanEnter` check could restrict both Start and Resume. This exercise intentionally restricts only Start from Idle, so it uses a transition-specific guard. No transition class or generic state-machine engine is required. See section 15 of the root `Discussion.md` for the comparison with the existing application studied earlier.
+Putting our permission in a general Recording `CanEnter` check could restrict both Start and Resume. This exercise intentionally restricts only Start from Idle, so it uses a transition-specific guard. No transition class or generic state-machine engine is required. See [section 15 of the root Discussion.md](../Discussion.md#15-transition-guards-versus-canenter-and-canexit) for the comparison with the existing application studied earlier.
 
 ## Run
 

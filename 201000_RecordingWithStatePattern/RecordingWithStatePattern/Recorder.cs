@@ -3,6 +3,7 @@ namespace RecordingWithStatePattern;
 /// <summary>
 /// Context whose request handling is delegated to its current state object.
 /// </summary>
+[System.Diagnostics.DebuggerDisplay("CurrentState = {CurrentState}")]
 public sealed class Recorder
 {
     private IRecorderState _currentState = new IdleState();

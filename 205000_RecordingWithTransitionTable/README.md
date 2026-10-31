@@ -30,7 +30,7 @@ For each accepted transition, execution is **table lookup -> optional guard -> E
 
 In `204000_RecordingWithTransitionResults`, each state class decides which requests it accepts and chooses the destination. Here, the table makes those decisions visible as data in one place. Both approaches implement the same five accepted transitions, seven invalid pairs, guard scope, result values, and lifecycle ordering.
 
-A table is useful when a compact set of rules should be inspected or edited together. As conditions, priorities, hierarchy, dynamic targets, and actions grow, table dispatch can become complicated. This example uses a small table and a focused recorder; it does not add a generic engine. See section 17 of the root `Discussion.md` for the comparison and tradeoffs.
+A table is useful when a compact set of rules should be inspected or edited together. As conditions, priorities, hierarchy, dynamic targets, and actions grow, table dispatch can become complicated. This example uses a small table and a focused recorder; it does not add a generic engine. See [section 17 of the root Discussion.md](../Discussion.md#17-state-owned-transitions-versus-a-centralized-transition-table) for the comparison and tradeoffs.
 
 ## Run
 

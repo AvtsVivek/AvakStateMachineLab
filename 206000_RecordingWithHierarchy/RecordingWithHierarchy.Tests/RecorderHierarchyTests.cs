@@ -8,16 +8,20 @@ public sealed class RecorderHierarchyTests
     [TestMethod]
     public void Constructor_EntersIdleWithoutCheckingPermissions()
     {
+        // Arrange
         var trace = new List<string>();
         int startCalls = 0;
         int enterCalls = 0;
         int exitCalls = 0;
+
+        // Act
         var recorder = new Recorder(
             () => { startCalls++; return true; },
             () => { enterCalls++; return true; },
             () => { exitCalls++; return true; },
             trace.Add);
 
+        // Assert
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         Assert.AreEqual(0, startCalls);
         Assert.AreEqual(0, enterCalls);
@@ -38,6 +42,7 @@ public sealed class RecorderHierarchyTests
     public void AcceptedTransition_ReportsExpectedChecksAndLifecycle(
         RecordingMode source, RecordingRequest request, RecordingMode target)
     {
+        // Arrange
         var trace = new List<string>();
         Recorder? recorder = null;
         recorder = new Recorder(
@@ -48,7 +53,10 @@ public sealed class RecorderHierarchyTests
         Reach(recorder, source);
         trace.Clear();
 
+        // Act & Assert
         Assert.AreEqual(TransitionResult.Transitioned, recorder.TryHandle(request));
+
+        // Assert
         Assert.AreEqual(target, recorder.CurrentState);
         CollectionAssert.AreEqual(ExpectedTransitionTrace(source, request, target), trace);
     }
@@ -66,6 +74,7 @@ public sealed class RecorderHierarchyTests
     [DataRow(RecordingMode.Paused, RecordingRequest.Pause)]
     public void InvalidRequest_DoesNotEvaluatePermissionsOrRunHooks(RecordingMode source, RecordingRequest request)
     {
+        // Arrange
         var trace = new List<string>();
         int startCalls = 0;
         int enterCalls = 0;
@@ -79,7 +88,10 @@ public sealed class RecorderHierarchyTests
         trace.Clear();
         startCalls = enterCalls = exitCalls = 0;
 
+        // Act & Assert
         Assert.AreEqual(TransitionResult.InvalidRequest, recorder.TryHandle(request));
+
+        // Assert
         Assert.AreEqual(source, recorder.CurrentState);
         Assert.AreEqual(0, startCalls);
         Assert.AreEqual(0, enterCalls);
@@ -91,11 +103,15 @@ public sealed class RecorderHierarchyTests
     [TestMethod]
     public void UnknownRequest_ReturnsInvalidRequest()
     {
+        // Arrange
         var trace = new List<string>();
         var recorder = CreateRecorder(trace);
         trace.Clear();
 
+        // Act & Assert
         Assert.AreEqual(TransitionResult.InvalidRequest, recorder.TryHandle((RecordingRequest)999));
+
+        // Assert
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         CollectionAssert.AreEqual(Array.Empty<string>(), trace);
     }
@@ -104,6 +120,7 @@ public sealed class RecorderHierarchyTests
     [TestMethod]
     public void StartGuardDenied_LeavesIdleWithoutParentEntryCheck()
     {
+        // Arrange
         var trace = new List<string>();
         int enterCalls = 0;
         var recorder = new Recorder(
@@ -113,7 +130,10 @@ public sealed class RecorderHierarchyTests
             trace.Add);
         trace.Clear();
 
+        // Act & Assert
         Assert.AreEqual(TransitionResult.GuardDenied, recorder.TryHandle(RecordingRequest.Start));
+
+        // Assert
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         Assert.AreEqual(0, enterCalls);
         CollectionAssert.AreEqual(new[] { "CanStart" }, trace);
@@ -123,6 +143,7 @@ public sealed class RecorderHierarchyTests
     [TestMethod]
     public void ParentEntryDeniedOnStart_LeavesIdleUntouched()
     {
+        // Arrange
         var trace = new List<string>();
         var recorder = new Recorder(
             () => { trace.Add("CanStart"); return true; },
@@ -131,7 +152,10 @@ public sealed class RecorderHierarchyTests
             trace.Add);
         trace.Clear();
 
+        // Act & Assert
         Assert.AreEqual(TransitionResult.GuardDenied, recorder.TryHandle(RecordingRequest.Start));
+
+        // Assert
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         CollectionAssert.AreEqual(new[] { "CanStart", "CanEnterSession" }, trace);
     }
@@ -140,6 +164,7 @@ public sealed class RecorderHierarchyTests
     [TestMethod]
     public void ParentEntryDeniedOnPause_LeavesRecordingChildActive()
     {
+        // Arrange
         var trace = new List<string>();
         bool canEnter = true;
         var recorder = new Recorder(() => true, () => { trace.Add("CanEnterSession"); return canEnter; },
@@ -148,7 +173,10 @@ public sealed class RecorderHierarchyTests
         trace.Clear();
         canEnter = false;
 
+        // Act & Assert
         Assert.AreEqual(TransitionResult.GuardDenied, recorder.TryHandle(RecordingRequest.Pause));
+
+        // Assert
         Assert.AreEqual(RecordingMode.Recording, recorder.CurrentState);
         CollectionAssert.AreEqual(new[] { "CanExitSession", "CanEnterSession" }, trace);
     }
@@ -160,6 +188,7 @@ public sealed class RecorderHierarchyTests
     [DataRow(RecordingRequest.Stop)]
     public void ParentExitDenied_BlocksTransitionWithoutLifecycle(RecordingRequest request)
     {
+        // Arrange
         var trace = new List<string>();
         bool canExit = true;
         var recorder = new Recorder(() => true, () => true, () => { trace.Add("CanExitSession"); return canExit; }, trace.Add);
@@ -167,7 +196,10 @@ public sealed class RecorderHierarchyTests
         trace.Clear();
         canExit = false;
 
+        // Act & Assert
         Assert.AreEqual(TransitionResult.GuardDenied, recorder.TryHandle(request));
+
+        // Assert
         Assert.AreEqual(RecordingMode.Recording, recorder.CurrentState);
         CollectionAssert.AreEqual(new[] { "CanExitSession" }, trace);
     }
@@ -176,6 +208,7 @@ public sealed class RecorderHierarchyTests
     [TestMethod]
     public void Resume_DoesNotRecheckStartPermission()
     {
+        // Arrange
         var trace = new List<string>();
         int startCalls = 0;
         bool canStart = true;
@@ -185,7 +218,10 @@ public sealed class RecorderHierarchyTests
         canStart = false;
         trace.Clear();
 
+        // Act & Assert
         Assert.AreEqual(TransitionResult.Transitioned, recorder.TryHandle(RecordingRequest.Resume));
+
+        // Assert
         Assert.AreEqual(RecordingMode.Recording, recorder.CurrentState);
         Assert.AreEqual(1, startCalls);
         CollectionAssert.AreEqual(new[] { "Exit Paused", "Enter Recording" }, trace);
@@ -195,6 +231,7 @@ public sealed class RecorderHierarchyTests
     [TestMethod]
     public void FullCycle_ParentLifecycleWrapsChildLifecycle()
     {
+        // Arrange
         var trace = new List<string>();
         var recorder = new Recorder(
             () => { trace.Add("CanStart"); return true; },
@@ -202,10 +239,13 @@ public sealed class RecorderHierarchyTests
             () => { trace.Add("CanExitSession"); return true; },
             trace.Add);
 
+        // Act & Assert
         Assert.AreEqual(TransitionResult.Transitioned, recorder.TryHandle(RecordingRequest.Start));
         Assert.AreEqual(TransitionResult.Transitioned, recorder.TryHandle(RecordingRequest.Pause));
         Assert.AreEqual(TransitionResult.Transitioned, recorder.TryHandle(RecordingRequest.Resume));
         Assert.AreEqual(TransitionResult.Transitioned, recorder.TryHandle(RecordingRequest.Stop));
+
+        // Assert
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         CollectionAssert.AreEqual(new[]
         {
@@ -220,6 +260,7 @@ public sealed class RecorderHierarchyTests
     [TestMethod]
     public void ChildTransitions_ReevaluateParentPoliciesButKeepParentActive()
     {
+        // Arrange
         var trace = new List<string>();
         int canEnterCalls = 0;
         int canExitCalls = 0;
@@ -230,8 +271,11 @@ public sealed class RecorderHierarchyTests
         trace.Clear();
         canEnterCalls = canExitCalls = 0;
 
+        // Act & Assert
         Assert.AreEqual(TransitionResult.Transitioned, recorder.TryHandle(RecordingRequest.Pause));
         Assert.AreEqual(TransitionResult.Transitioned, recorder.TryHandle(RecordingRequest.Resume));
+
+        // Assert
         Assert.AreEqual(2, canEnterCalls);
         Assert.AreEqual(2, canExitCalls);
         CollectionAssert.AreEqual(new[] { "Exit Recording", "Enter Paused", "Exit Paused", "Enter Recording" }, trace);
@@ -241,6 +285,7 @@ public sealed class RecorderHierarchyTests
     [TestMethod]
     public void ParentPermissionException_PropagatesBeforeLifecycleAndAllowsRetry()
     {
+        // Arrange
         var failure = new InvalidOperationException("Session entry policy failed.");
         bool shouldThrow = true;
         var trace = new List<string>();
@@ -254,13 +299,18 @@ public sealed class RecorderHierarchyTests
         }, () => true, trace.Add);
         trace.Clear();
 
+        // Act & Assert
         var actual = Assert.ThrowsExactly<InvalidOperationException>(() => recorder.TryHandle(RecordingRequest.Start));
+
+        // Assert
         Assert.AreSame(failure, actual);
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         CollectionAssert.AreEqual(Array.Empty<string>(), trace);
 
         shouldThrow = false;
+        // Act & Assert
         Assert.AreEqual(TransitionResult.Transitioned, recorder.TryHandle(RecordingRequest.Start));
+        // Assert
         Assert.AreEqual(RecordingMode.Recording, recorder.CurrentState);
         CollectionAssert.AreEqual(new[] { "Exit Idle", "Enter RecordingSession", "Enter Recording" }, trace);
     }
@@ -272,6 +322,7 @@ public sealed class RecorderHierarchyTests
     [DataRow(false)]
     public void NestedRequest_ThrowsAndLaterTransitionSucceeds(bool fromPermission)
     {
+        // Arrange
         Recorder? recorder = null;
         bool sendNested = true;
         var activities = new List<string>();
@@ -292,14 +343,19 @@ public sealed class RecorderHierarchyTests
         });
         activities.Clear();
 
+        // Act & Assert
         var exception = Assert.ThrowsExactly<InvalidOperationException>(() => recorder.TryHandle(RecordingRequest.Start));
+
+        // Assert
         Assert.AreEqual("A permission or lifecycle callback cannot send a nested request.", exception.Message);
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         CollectionAssert.AreEqual(fromPermission ? Array.Empty<string>() : new[] { "Exit Idle" }, activities);
 
         sendNested = false;
         activities.Clear();
+        // Act & Assert
         Assert.AreEqual(TransitionResult.Transitioned, recorder.TryHandle(RecordingRequest.Start));
+        // Assert
         Assert.AreEqual(RecordingMode.Recording, recorder.CurrentState);
         CollectionAssert.AreEqual(new[] { "Exit Idle", "Enter RecordingSession", "Enter Recording" }, activities);
     }
@@ -313,13 +369,16 @@ public sealed class RecorderHierarchyTests
     [DataRow("reportActivity")]
     public void NullDependency_ThrowsWithParameterName(string nullParameter)
     {
+        // Arrange
         Func<bool> canStart = nullParameter == "canStartRecording" ? null! : () => true;
         Func<bool> canEnter = nullParameter == "canEnterSession" ? null! : () => true;
         Func<bool> canExit = nullParameter == "canExitSession" ? null! : () => true;
         Action<string> report = nullParameter == "reportActivity" ? null! : _ => { };
 
+        // Act & Assert
         var exception = Assert.ThrowsExactly<ArgumentNullException>(() => new Recorder(canStart, canEnter, canExit, report));
 
+        // Assert
         Assert.AreEqual(nullParameter, exception.ParamName);
     }
 
@@ -327,13 +386,17 @@ public sealed class RecorderHierarchyTests
     [TestMethod]
     public void Instances_DoNotShareCompositeState()
     {
+        // Arrange
         var firstTrace = new List<string>();
         var secondTrace = new List<string>();
         var first = CreateRecorder(firstTrace);
         var second = new Recorder(() => true, () => false, () => true, secondTrace.Add);
 
+        // Act & Assert
         Assert.AreEqual(TransitionResult.Transitioned, first.TryHandle(RecordingRequest.Start));
         Assert.AreEqual(TransitionResult.GuardDenied, second.TryHandle(RecordingRequest.Start));
+
+        // Assert
         Assert.AreEqual(RecordingMode.Recording, first.CurrentState);
         Assert.AreEqual(RecordingMode.Idle, second.CurrentState);
         CollectionAssert.AreEqual(new[] { "Enter Idle", "Exit Idle", "Enter RecordingSession", "Enter Recording" }, firstTrace);

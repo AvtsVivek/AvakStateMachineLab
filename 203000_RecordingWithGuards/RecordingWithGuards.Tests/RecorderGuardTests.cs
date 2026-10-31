@@ -8,10 +8,14 @@ public sealed class RecorderGuardTests
     [TestMethod]
     public void Constructor_EntersIdleWithoutEvaluatingGuard()
     {
+        // Arrange
         var activities = new List<string>();
         int guardCalls = 0;
+
+        // Act
         var recorder = new Recorder(() => { guardCalls++; return false; }, activities.Add);
 
+        // Assert
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         Assert.AreEqual(0, guardCalls);
         CollectionAssert.AreEqual(new[] { "Enter Idle" }, activities);
@@ -30,6 +34,7 @@ public sealed class RecorderGuardTests
     public void AcceptedRequest_RunsOnlyApplicableGuardBeforeLifecycle(
         RecordingMode source, RecordingRequest request, RecordingMode target)
     {
+        // Arrange
         var trace = new List<string>();
         Recorder? recorder = null;
         bool permission = true;
@@ -40,7 +45,10 @@ public sealed class RecorderGuardTests
         trace.Clear();
         permission = source == RecordingMode.Idle;
 
+        // Act & Assert
         Assert.IsTrue(recorder.TryHandle(request));
+
+        // Assert
         Assert.AreEqual(target, recorder.CurrentState);
         var expected = new List<string>();
         if (source == RecordingMode.Idle)
@@ -65,6 +73,7 @@ public sealed class RecorderGuardTests
     [DataRow(RecordingMode.Paused, RecordingRequest.Pause)]
     public void InvalidRequest_DoesNotEvaluateGuardOrRunHooks(RecordingMode source, RecordingRequest request)
     {
+        // Arrange
         var activities = new List<string>();
         int guardCalls = 0;
         var recorder = new Recorder(() => { guardCalls++; return true; }, activities.Add);
@@ -72,7 +81,10 @@ public sealed class RecorderGuardTests
         activities.Clear();
         guardCalls = 0;
 
+        // Act & Assert
         Assert.IsFalse(recorder.TryHandle(request));
+
+        // Assert
         Assert.AreEqual(source, recorder.CurrentState);
         Assert.AreEqual(0, guardCalls);
         CollectionAssert.AreEqual(Array.Empty<string>(), activities);
@@ -82,12 +94,16 @@ public sealed class RecorderGuardTests
     [TestMethod]
     public void DeniedStart_LeavesIdleWithoutLifecycleActivity()
     {
+        // Arrange
         var activities = new List<string>();
         int guardCalls = 0;
         var recorder = new Recorder(() => { guardCalls++; return false; }, activities.Add);
         activities.Clear();
 
+        // Act & Assert
         Assert.IsFalse(recorder.TryHandle(RecordingRequest.Start));
+
+        // Assert
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         Assert.AreEqual(1, guardCalls);
         CollectionAssert.AreEqual(Array.Empty<string>(), activities);
@@ -97,11 +113,13 @@ public sealed class RecorderGuardTests
     [TestMethod]
     public void Start_RetriesWithFreshPermissionAndDoesNotCacheSuccess()
     {
+        // Arrange
         bool permission = false;
         int guardCalls = 0;
         var activities = new List<string>();
         var recorder = new Recorder(() => { guardCalls++; return permission; }, activities.Add);
 
+        // Act & Assert
         Assert.IsFalse(recorder.TryHandle(RecordingRequest.Start));
         permission = true;
         Assert.IsTrue(recorder.TryHandle(RecordingRequest.Start));
@@ -109,6 +127,7 @@ public sealed class RecorderGuardTests
         permission = false;
         Assert.IsFalse(recorder.TryHandle(RecordingRequest.Start));
 
+        // Assert
         Assert.AreEqual(3, guardCalls);
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         CollectionAssert.AreEqual(new[]
@@ -121,17 +140,20 @@ public sealed class RecorderGuardTests
     [TestMethod]
     public void Resume_IgnoresStartPermissionAndPreservesFullLifecycleTrace()
     {
+        // Arrange
         bool permission = true;
         int guardCalls = 0;
         var activities = new List<string>();
         var recorder = new Recorder(() => { guardCalls++; return permission; }, activities.Add);
 
+        // Act & Assert
         Assert.IsTrue(recorder.TryHandle(RecordingRequest.Start));
         Assert.IsTrue(recorder.TryHandle(RecordingRequest.Pause));
         permission = false;
         Assert.IsTrue(recorder.TryHandle(RecordingRequest.Resume));
         Assert.IsTrue(recorder.TryHandle(RecordingRequest.Stop));
 
+        // Assert
         Assert.AreEqual(1, guardCalls);
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         CollectionAssert.AreEqual(new[]
@@ -145,6 +167,7 @@ public sealed class RecorderGuardTests
     [TestMethod]
     public void ThrowingGuard_PreservesStateAndAllowsLaterRequest()
     {
+        // Arrange
         var failure = new InvalidOperationException("Permission service failed.");
         bool shouldThrow = true;
         int guardCalls = 0;
@@ -160,13 +183,19 @@ public sealed class RecorderGuardTests
         }, activities.Add);
         activities.Clear();
 
+        // Act & Assert
         var actual = Assert.ThrowsExactly<InvalidOperationException>(() => recorder.TryHandle(RecordingRequest.Start));
+
+        // Assert
         Assert.AreSame(failure, actual);
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         CollectionAssert.AreEqual(Array.Empty<string>(), activities);
 
         shouldThrow = false;
+        // Act & Assert
         Assert.IsTrue(recorder.TryHandle(RecordingRequest.Start));
+
+        // Assert
         Assert.AreEqual(2, guardCalls);
         Assert.AreEqual(RecordingMode.Recording, recorder.CurrentState);
         CollectionAssert.AreEqual(new[] { "Exit Idle", "Enter Recording" }, activities);
@@ -180,9 +209,11 @@ public sealed class RecorderGuardTests
     [DataRow(false, "reportActivity")]
     public void NullCallback_IsRejected(bool nullGuard, string parameterName)
     {
+        // Act & Assert
         var exception = Assert.ThrowsExactly<ArgumentNullException>(() =>
             new Recorder(nullGuard ? null! : () => true, nullGuard ? _ => { } : null!));
 
+        // Assert
         Assert.AreEqual(parameterName, exception.ParamName);
     }
 
@@ -193,6 +224,7 @@ public sealed class RecorderGuardTests
     [DataRow(false)]
     public void NestedRequest_IsRejectedAndLaterRequestCanSucceed(bool fromGuard)
     {
+        // Arrange
         Recorder? recorder = null;
         bool sendNested = true;
         var activities = new List<string>();
@@ -213,14 +245,19 @@ public sealed class RecorderGuardTests
         });
         activities.Clear();
 
+        // Act & Assert
         var exception = Assert.ThrowsExactly<InvalidOperationException>(() => recorder.TryHandle(RecordingRequest.Start));
+
+        // Assert
         Assert.AreEqual("A guard or lifecycle callback cannot send a nested request.", exception.Message);
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         CollectionAssert.AreEqual(fromGuard ? Array.Empty<string>() : new[] { "Exit Idle" }, activities);
 
         sendNested = false;
         activities.Clear();
+        // Act & Assert
         Assert.IsTrue(recorder.TryHandle(RecordingRequest.Start));
+        // Assert
         Assert.AreEqual(RecordingMode.Recording, recorder.CurrentState);
         CollectionAssert.AreEqual(new[] { "Exit Idle", "Enter Recording" }, activities);
     }
@@ -233,6 +270,7 @@ public sealed class RecorderGuardTests
     [DataRow("Enter Paused", RecordingMode.Paused)]
     public void LifecycleFailure_PropagatesWithoutRollback(string failingActivity, RecordingMode expectedMode)
     {
+        // Arrange
         var failure = new InvalidOperationException("Lifecycle failed.");
         var activities = new List<string>();
         var recorder = new Recorder(() => true, activity =>
@@ -246,7 +284,10 @@ public sealed class RecorderGuardTests
         Assert.IsTrue(recorder.TryHandle(RecordingRequest.Start));
         activities.Clear();
 
+        // Act & Assert
         var actual = Assert.ThrowsExactly<InvalidOperationException>(() => recorder.TryHandle(RecordingRequest.Pause));
+
+        // Assert
         Assert.AreSame(failure, actual);
         Assert.AreEqual(expectedMode, recorder.CurrentState);
         CollectionAssert.AreEqual(failingActivity == "Exit Recording"
@@ -258,13 +299,17 @@ public sealed class RecorderGuardTests
     [TestMethod]
     public void Instances_DoNotShareStateOrPermission()
     {
+        // Arrange
         var firstActivities = new List<string>();
         var secondActivities = new List<string>();
         var first = new Recorder(() => true, firstActivities.Add);
         var second = new Recorder(() => false, secondActivities.Add);
 
+        // Act & Assert
         Assert.IsTrue(first.TryHandle(RecordingRequest.Start));
         Assert.IsFalse(second.TryHandle(RecordingRequest.Start));
+
+        // Assert
         Assert.AreEqual(RecordingMode.Recording, first.CurrentState);
         Assert.AreEqual(RecordingMode.Idle, second.CurrentState);
         CollectionAssert.AreEqual(new[] { "Enter Idle", "Exit Idle", "Enter Recording" }, firstActivities);

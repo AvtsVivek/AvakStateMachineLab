@@ -18,8 +18,10 @@ public sealed class RecorderTransitionTests
     [TestMethod]
     public void NewRecorder_StartsIdle()
     {
+        // Act
         Recorder recorder = new();
 
+        // Assert
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
     }
 
@@ -44,10 +46,13 @@ public sealed class RecorderTransitionTests
         RecordingRequest request,
         RecordingMode expectedState)
     {
+        // Arrange
         Recorder recorder = CreateRecorderInState(initialState);
 
+        // Act
         bool accepted = recorder.TryHandle(request);
 
+        // Assert
         Assert.IsTrue(accepted, $"{request} should be accepted from {initialState}.");
         Assert.AreEqual(expectedState, recorder.CurrentState);
     }
@@ -73,10 +78,13 @@ public sealed class RecorderTransitionTests
         RecordingMode initialState,
         RecordingRequest request)
     {
+        // Arrange
         Recorder recorder = CreateRecorderInState(initialState);
 
+        // Act
         bool accepted = recorder.TryHandle(request);
 
+        // Assert
         Assert.IsFalse(accepted, $"{request} should be rejected from {initialState}.");
         Assert.AreEqual(initialState, recorder.CurrentState);
     }
@@ -87,11 +95,14 @@ public sealed class RecorderTransitionTests
     [TestMethod]
     public void RecorderInstances_MaintainIndependentStates()
     {
+        // Arrange
         Recorder first = new();
         Recorder second = new();
 
+        // Act
         bool accepted = first.TryHandle(RecordingRequest.Start);
 
+        // Assert
         Assert.IsTrue(accepted);
         Assert.AreEqual(RecordingMode.Recording, first.CurrentState);
         Assert.AreEqual(RecordingMode.Idle, second.CurrentState);

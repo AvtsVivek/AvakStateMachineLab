@@ -1,6 +1,7 @@
 namespace RecordingWithHierarchy;
 
 /// <summary>Composite state containing exactly one active Recording or Paused child.</summary>
+[System.Diagnostics.DebuggerDisplay("ActiveSubstate = {_activeSubstate?.Mode.ToString(),nq}, IsActive = {IsActive}")]
 internal sealed class RecordingSessionState
 {
     private readonly Func<bool> _canEnter;

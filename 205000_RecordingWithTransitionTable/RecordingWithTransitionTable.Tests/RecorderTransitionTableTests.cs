@@ -8,10 +8,14 @@ public sealed class RecorderTransitionTableTests
     [TestMethod]
     public void Constructor_EntersIdleWithoutEvaluatingGuard()
     {
+        // Arrange
         var activities = new List<string>();
         int guardCalls = 0;
+
+        // Act
         var recorder = new Recorder(() => { guardCalls++; return false; }, activities.Add);
 
+        // Assert
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         Assert.AreEqual(0, guardCalls);
         CollectionAssert.AreEqual(new[] { "Enter Idle" }, activities);
@@ -30,6 +34,7 @@ public sealed class RecorderTransitionTableTests
     public void TableRow_ReturnsTransitionedAndPreservesExecutionOrder(
         RecordingMode source, RecordingRequest request, RecordingMode target)
     {
+        // Arrange
         var trace = new List<string>();
         Recorder? recorder = null;
         int guardCalls = 0;
@@ -40,7 +45,10 @@ public sealed class RecorderTransitionTableTests
         trace.Clear();
         guardCalls = 0;
 
+        // Act & Assert
         Assert.AreEqual(TransitionResult.Transitioned, recorder.TryHandle(request));
+
+        // Assert
         Assert.AreEqual(target, recorder.CurrentState);
         Assert.AreEqual(source == RecordingMode.Idle ? 1 : 0, guardCalls);
         var expected = new List<string>();
@@ -66,6 +74,7 @@ public sealed class RecorderTransitionTableTests
     [DataRow(RecordingMode.Paused, RecordingRequest.Pause)]
     public void MissingTableRow_ReturnsInvalidRequestWithoutEffects(RecordingMode source, RecordingRequest request)
     {
+        // Arrange
         var activities = new List<string>();
         int guardCalls = 0;
         var recorder = new Recorder(() => { guardCalls++; return true; }, activities.Add);
@@ -73,7 +82,10 @@ public sealed class RecorderTransitionTableTests
         activities.Clear();
         guardCalls = 0;
 
+        // Act & Assert
         Assert.AreEqual(TransitionResult.InvalidRequest, recorder.TryHandle(request));
+
+        // Assert
         Assert.AreEqual(source, recorder.CurrentState);
         Assert.AreEqual(0, guardCalls);
         CollectionAssert.AreEqual(Array.Empty<string>(), activities);
@@ -83,11 +95,15 @@ public sealed class RecorderTransitionTableTests
     [TestMethod]
     public void UnknownRequest_ReturnsInvalidRequest()
     {
+        // Arrange
         var activities = new List<string>();
         var recorder = new Recorder(() => true, activities.Add);
         activities.Clear();
 
+        // Act & Assert
         Assert.AreEqual(TransitionResult.InvalidRequest, recorder.TryHandle((RecordingRequest)999));
+
+        // Assert
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         CollectionAssert.AreEqual(Array.Empty<string>(), activities);
     }
@@ -96,12 +112,16 @@ public sealed class RecorderTransitionTableTests
     [TestMethod]
     public void StartGuardDenied_ReturnsDistinctResultAndLeavesIdleActive()
     {
+        // Arrange
         int guardCalls = 0;
         var activities = new List<string>();
         var recorder = new Recorder(() => { guardCalls++; return false; }, activities.Add);
         activities.Clear();
 
+        // Act & Assert
         Assert.AreEqual(TransitionResult.GuardDenied, recorder.TryHandle(RecordingRequest.Start));
+
+        // Assert
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         Assert.AreEqual(1, guardCalls);
         CollectionAssert.AreEqual(Array.Empty<string>(), activities);
@@ -111,11 +131,13 @@ public sealed class RecorderTransitionTableTests
     [TestMethod]
     public void Start_RetryUsesFreshPermission()
     {
+        // Arrange
         bool permission = false;
         int guardCalls = 0;
         var activities = new List<string>();
         var recorder = new Recorder(() => { guardCalls++; return permission; }, activities.Add);
 
+        // Act & Assert
         Assert.AreEqual(TransitionResult.GuardDenied, recorder.TryHandle(RecordingRequest.Start));
         permission = true;
         Assert.AreEqual(TransitionResult.Transitioned, recorder.TryHandle(RecordingRequest.Start));
@@ -123,6 +145,7 @@ public sealed class RecorderTransitionTableTests
         permission = false;
         Assert.AreEqual(TransitionResult.GuardDenied, recorder.TryHandle(RecordingRequest.Start));
 
+        // Assert
         Assert.AreEqual(3, guardCalls);
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         CollectionAssert.AreEqual(new[]
@@ -135,17 +158,20 @@ public sealed class RecorderTransitionTableTests
     [TestMethod]
     public void Resume_IsNotGuardedByStartPermission()
     {
+        // Arrange
         bool permission = true;
         int guardCalls = 0;
         var activities = new List<string>();
         var recorder = new Recorder(() => { guardCalls++; return permission; }, activities.Add);
 
+        // Act & Assert
         Assert.AreEqual(TransitionResult.Transitioned, recorder.TryHandle(RecordingRequest.Start));
         Assert.AreEqual(TransitionResult.Transitioned, recorder.TryHandle(RecordingRequest.Pause));
         permission = false;
         Assert.AreEqual(TransitionResult.Transitioned, recorder.TryHandle(RecordingRequest.Resume));
         Assert.AreEqual(TransitionResult.Transitioned, recorder.TryHandle(RecordingRequest.Stop));
 
+        // Assert
         Assert.AreEqual(1, guardCalls);
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         CollectionAssert.AreEqual(new[]
@@ -159,6 +185,7 @@ public sealed class RecorderTransitionTableTests
     [TestMethod]
     public void ThrowingGuard_PropagatesBeforeLifecycleAndPermitsRetry()
     {
+        // Arrange
         var failure = new InvalidOperationException("Permission service failed.");
         bool shouldThrow = true;
         int guardCalls = 0;
@@ -174,13 +201,19 @@ public sealed class RecorderTransitionTableTests
         }, activities.Add);
         activities.Clear();
 
+        // Act & Assert
         var actual = Assert.ThrowsExactly<InvalidOperationException>(() => recorder.TryHandle(RecordingRequest.Start));
+
+        // Assert
         Assert.AreSame(failure, actual);
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         CollectionAssert.AreEqual(Array.Empty<string>(), activities);
 
         shouldThrow = false;
+        // Act & Assert
         Assert.AreEqual(TransitionResult.Transitioned, recorder.TryHandle(RecordingRequest.Start));
+
+        // Assert
         Assert.AreEqual(2, guardCalls);
         CollectionAssert.AreEqual(new[] { "Exit Idle", "Enter Recording" }, activities);
     }
@@ -193,8 +226,11 @@ public sealed class RecorderTransitionTableTests
     [DataRow(false, "reportActivity")]
     public void NullDependency_ThrowsArgumentNullException(bool nullGuard, string parameterName)
     {
+        // Act & Assert
         var exception = Assert.ThrowsExactly<ArgumentNullException>(() =>
             new Recorder(nullGuard ? null! : () => true, nullGuard ? _ => { } : null!));
+
+        // Assert
         Assert.AreEqual(parameterName, exception.ParamName);
     }
 
@@ -205,6 +241,7 @@ public sealed class RecorderTransitionTableTests
     [DataRow(false)]
     public void NestedRequest_ThrowsAndLaterTransitionWorks(bool fromGuard)
     {
+        // Arrange
         Recorder? recorder = null;
         bool sendNested = true;
         var activities = new List<string>();
@@ -225,14 +262,19 @@ public sealed class RecorderTransitionTableTests
         });
         activities.Clear();
 
+        // Act & Assert
         var exception = Assert.ThrowsExactly<InvalidOperationException>(() => recorder.TryHandle(RecordingRequest.Start));
+
+        // Assert
         Assert.AreEqual("A guard or lifecycle callback cannot send a nested request.", exception.Message);
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
         CollectionAssert.AreEqual(fromGuard ? Array.Empty<string>() : new[] { "Exit Idle" }, activities);
 
         sendNested = false;
         activities.Clear();
+        // Act & Assert
         Assert.AreEqual(TransitionResult.Transitioned, recorder.TryHandle(RecordingRequest.Start));
+        // Assert
         Assert.AreEqual(RecordingMode.Recording, recorder.CurrentState);
         CollectionAssert.AreEqual(new[] { "Exit Idle", "Enter Recording" }, activities);
     }
@@ -245,6 +287,7 @@ public sealed class RecorderTransitionTableTests
     [DataRow("Enter Paused", RecordingMode.Paused)]
     public void LifecycleException_PropagatesWithoutRollback(string failingActivity, RecordingMode expectedMode)
     {
+        // Arrange
         var failure = new InvalidOperationException("Lifecycle failed.");
         var activities = new List<string>();
         var recorder = new Recorder(() => true, activity =>
@@ -258,7 +301,10 @@ public sealed class RecorderTransitionTableTests
         Assert.AreEqual(TransitionResult.Transitioned, recorder.TryHandle(RecordingRequest.Start));
         activities.Clear();
 
+        // Act & Assert
         var actual = Assert.ThrowsExactly<InvalidOperationException>(() => recorder.TryHandle(RecordingRequest.Pause));
+
+        // Assert
         Assert.AreSame(failure, actual);
         Assert.AreEqual(expectedMode, recorder.CurrentState);
         CollectionAssert.AreEqual(failingActivity == "Exit Recording"
@@ -270,13 +316,17 @@ public sealed class RecorderTransitionTableTests
     [TestMethod]
     public void Instances_KeepIndependentModesAndGuards()
     {
+        // Arrange
         var firstActivities = new List<string>();
         var secondActivities = new List<string>();
         var first = new Recorder(() => true, firstActivities.Add);
         var second = new Recorder(() => false, secondActivities.Add);
 
+        // Act & Assert
         Assert.AreEqual(TransitionResult.Transitioned, first.TryHandle(RecordingRequest.Start));
         Assert.AreEqual(TransitionResult.GuardDenied, second.TryHandle(RecordingRequest.Start));
+
+        // Assert
         Assert.AreEqual(RecordingMode.Recording, first.CurrentState);
         Assert.AreEqual(RecordingMode.Idle, second.CurrentState);
         CollectionAssert.AreEqual(new[] { "Enter Idle", "Exit Idle", "Enter Recording" }, firstActivities);
