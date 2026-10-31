@@ -6,7 +6,15 @@ namespace RecordingWithHierarchy.Tests;
 [TestClass]
 public sealed class RecorderInitializationTests
 {
-    /// <summary>Allocates only after both Start policies pass and reuses the inactive composite after Stop.</summary>
+    /// <summary>
+    /// Verifies lazy session allocation separately from lifecycle activation. Construction, reading
+    /// CurrentState, an invalid Pause, denied Start/parent-entry permissions, and a throwing entry
+    /// policy must all leave the session reference null and produce no activity beyond initial Idle
+    /// entry. The first permitted Start creates the session. Stop makes it inactive but retains the
+    /// same object; a denied restart leaves it unchanged, and a permitted restart reuses it while
+    /// running the normal parent/child entry hooks again. This proves that caching the object does
+    /// not cache permission results or keep the session active.
+    /// </summary>
     /// <remarks>Inspects the private reference because lifecycle traces cannot prove whether an object was allocated.</remarks>
     [TestMethod]
     public void Session_IsCreatedOnlyForPermittedStartAndReusedAfterStop()

@@ -4,7 +4,11 @@ namespace RecordingWithHierarchy.Tests;
 [TestClass]
 public sealed class RecorderHierarchyTests
 {
-    /// <summary>Construction enters only Idle and does not evaluate transition or parent permissions.</summary>
+    /// <summary>
+    /// Verifies the recorder's initial lifecycle: constructing a recorder makes Idle the active mode
+    /// and reports exactly one Enter Idle event. None of the Start, parent-entry, or parent-exit
+    /// permission callbacks runs, because construction is not a requested transition.
+    /// </summary>
     [TestMethod]
     public void Constructor_EntersIdleWithoutCheckingPermissions()
     {
@@ -29,7 +33,13 @@ public sealed class RecorderHierarchyTests
         CollectionAssert.AreEqual(new[] { "Enter Idle" }, trace);
     }
 
-    /// <summary>Each accepted transition reports parent checks and hooks in their required order.</summary>
+    /// <summary>
+    /// Covers all five accepted state/request combinations with permissions allowed. Each request
+    /// must return Transitioned and reach its expected leaf mode. The exact trace verifies that
+    /// permissions run before hooks, Start enters the parent before its child, Stop exits the child
+    /// before the parent, and Pause/Resume switch children without parent lifecycle events.
+    /// Callback observations also verify the source mode during exit and the target mode during entry.
+    /// </summary>
     /// <param name="source">The initial leaf mode.</param>
     /// <param name="request">An accepted request in that mode.</param>
     /// <param name="target">The resulting leaf mode.</param>
@@ -61,7 +71,12 @@ public sealed class RecorderHierarchyTests
         CollectionAssert.AreEqual(ExpectedTransitionTrace(source, request, target), trace);
     }
 
-    /// <summary>Undefined state/request pairs return InvalidRequest without invoking guards or lifecycle hooks.</summary>
+    /// <summary>
+    /// Covers the seven combinations of known modes and requests that have no defined transition.
+    /// After reaching the source mode and clearing setup activity, the request must return
+    /// InvalidRequest, preserve that mode, call none of the three permission callbacks, and produce
+    /// no lifecycle events. This distinguishes an undefined request from a valid but denied transition.
+    /// </summary>
     /// <param name="source">The leaf mode.</param>
     /// <param name="request">A request not defined for that mode.</param>
     [TestMethod]
@@ -99,7 +114,11 @@ public sealed class RecorderHierarchyTests
         CollectionAssert.AreEqual(Array.Empty<string>(), trace);
     }
 
-    /// <summary>An unknown request value has no hierarchy transition and returns InvalidRequest.</summary>
+    /// <summary>
+    /// Sends the numeric value 999, which is not a declared RecordingRequest, to an Idle recorder.
+    /// The recorder must return InvalidRequest, remain Idle, and emit no lifecycle events rather
+    /// than treating the unknown value as a valid transition trigger.
+    /// </summary>
     [TestMethod]
     public void UnknownRequest_ReturnsInvalidRequest()
     {
@@ -116,7 +135,11 @@ public sealed class RecorderHierarchyTests
         CollectionAssert.AreEqual(Array.Empty<string>(), trace);
     }
 
-    /// <summary>The Start-specific permission denial does not invoke parent entry permission or lifecycle actions.</summary>
+    /// <summary>
+    /// Requests Start while the Start-specific guard returns false. The result must be GuardDenied
+    /// and Idle must remain active. Only the Start check appears in the trace: the parent-entry
+    /// policy is not called and no lifecycle hook runs. This verifies short-circuiting at the first denial.
+    /// </summary>
     [TestMethod]
     public void StartGuardDenied_LeavesIdleWithoutParentEntryCheck()
     {
@@ -139,7 +162,12 @@ public sealed class RecorderHierarchyTests
         CollectionAssert.AreEqual(new[] { "CanStart" }, trace);
     }
 
-    /// <summary>Parent CanEnter denial blocks initial composite entry before any lifecycle hooks.</summary>
+    /// <summary>
+    /// Allows the Start-specific guard but denies the RecordingSession parent's entry policy.
+    /// Start must return GuardDenied and leave Idle active. The trace contains Start permission
+    /// followed by parent-entry permission only, proving that neither Idle exit nor parent/child
+    /// entry runs when the second permission check denies the transition.
+    /// </summary>
     [TestMethod]
     public void ParentEntryDeniedOnStart_LeavesIdleUntouched()
     {
@@ -160,7 +188,12 @@ public sealed class RecorderHierarchyTests
         CollectionAssert.AreEqual(new[] { "CanStart", "CanEnterSession" }, trace);
     }
 
-    /// <summary>Parent CanEnter is checked on child entry even though the parent lifecycle is not re-entered.</summary>
+    /// <summary>
+    /// Starts recording successfully, then changes the parent-entry policy to deny entry before Pause.
+    /// Pause must check parent-exit permission and then parent-entry permission, return GuardDenied,
+    /// and keep the Recording child active without lifecycle events. This demonstrates that parent
+    /// permission applies to entering a sibling child even though the parent itself would stay active.
+    /// </summary>
     [TestMethod]
     public void ParentEntryDeniedOnPause_LeavesRecordingChildActive()
     {
@@ -181,7 +214,12 @@ public sealed class RecorderHierarchyTests
         CollectionAssert.AreEqual(new[] { "CanExitSession", "CanEnterSession" }, trace);
     }
 
-    /// <summary>Parent CanExit denial blocks child changes and composite exit before lifecycle work.</summary>
+    /// <summary>
+    /// Starts recording, then denies the parent's exit policy before requesting Pause or Stop.
+    /// Both requests must return GuardDenied and preserve the Recording child. Only the exit check
+    /// is traced; no subsequent entry check or lifecycle hook runs. The two cases cover blocking
+    /// both a child-only change and a transition that would leave the entire composite.
+    /// </summary>
     /// <param name="request">A valid request departing from the active Recording child.</param>
     [TestMethod]
     [DataRow(RecordingRequest.Pause)]
@@ -204,7 +242,12 @@ public sealed class RecorderHierarchyTests
         CollectionAssert.AreEqual(new[] { "CanExitSession" }, trace);
     }
 
-    /// <summary>Start permission is specific to starting a session; Resume has only parent-level checks.</summary>
+    /// <summary>
+    /// Starts and pauses a recording, then withdraws permission to start a new recording.
+    /// Resume must still return Transitioned and activate Recording because the parent policies
+    /// allow it. The Start guard's call count remains one, and the trace contains only Exit Paused
+    /// and Enter Recording. This keeps the Start-specific guard separate from resuming a session.
+    /// </summary>
     [TestMethod]
     public void Resume_DoesNotRecheckStartPermission()
     {
@@ -227,7 +270,12 @@ public sealed class RecorderHierarchyTests
         CollectionAssert.AreEqual(new[] { "Exit Paused", "Enter Recording" }, trace);
     }
 
-    /// <summary>A complete cycle enters and exits the parent once while switching only its child between.</summary>
+    /// <summary>
+    /// Runs Start, Pause, Resume, and Stop with all permissions allowed and verifies the complete
+    /// ordered trace, including initial Idle entry and every permission check. The parent enters
+    /// once on Start, remains active through both child changes, and exits once after its child
+    /// on Stop. All requests succeed and the final mode is Idle, demonstrating a full session lifecycle.
+    /// </summary>
     [TestMethod]
     public void FullCycle_ParentLifecycleWrapsChildLifecycle()
     {
@@ -256,7 +304,12 @@ public sealed class RecorderHierarchyTests
         }, trace);
     }
 
-    /// <summary>Each child transition freshly reevaluates both parent permissions without parent lifecycle activity.</summary>
+    /// <summary>
+    /// After starting a session, resets the policy counters and performs Pause followed by Resume.
+    /// Both parent policies must be evaluated twice, once per child transition, rather than reusing
+    /// earlier permission results. The exact lifecycle trace contains only the two child exit/entry
+    /// pairs, showing that repeated parent permission checks do not re-enter or exit the parent.
+    /// </summary>
     [TestMethod]
     public void ChildTransitions_ReevaluateParentPoliciesButKeepParentActive()
     {
@@ -281,7 +334,12 @@ public sealed class RecorderHierarchyTests
         CollectionAssert.AreEqual(new[] { "Exit Recording", "Enter Paused", "Exit Paused", "Enter Recording" }, trace);
     }
 
-    /// <summary>A parent permission exception propagates before hooks and a later request may retry.</summary>
+    /// <summary>
+    /// Makes the parent-entry policy throw during Start and verifies that the exact exception
+    /// propagates rather than becoming GuardDenied. Idle remains active and no lifecycle event runs.
+    /// After allowing the policy to succeed, a later Start must complete the normal parent/child
+    /// entry sequence, proving that the request-processing flag resets after the failed attempt.
+    /// </summary>
     [TestMethod]
     public void ParentPermissionException_PropagatesBeforeLifecycleAndAllowsRetry()
     {
@@ -315,7 +373,13 @@ public sealed class RecorderHierarchyTests
         CollectionAssert.AreEqual(new[] { "Exit Idle", "Enter RecordingSession", "Enter Recording" }, trace);
     }
 
-    /// <summary>Callbacks cannot issue nested requests; the recorder is usable after the exception.</summary>
+    /// <summary>
+    /// Attempts to send another Start while an outer Start is already being processed, either from
+    /// the parent-entry policy or the Exit Idle callback. The nested request must throw the expected
+    /// InvalidOperationException and leave the mode Idle. The trace distinguishes failure before
+    /// lifecycle work from failure during Idle exit. Disabling the nested request allows a later
+    /// Start to succeed, verifying reentrancy protection and recovery of the processing flag.
+    /// </summary>
     /// <param name="fromPermission">True to nest from parent permission, false to nest from lifecycle reporting.</param>
     [TestMethod]
     [DataRow(true)]
@@ -360,7 +424,12 @@ public sealed class RecorderHierarchyTests
         CollectionAssert.AreEqual(new[] { "Exit Idle", "Enter RecordingSession", "Enter Recording" }, activities);
     }
 
-    /// <summary>All injected callbacks are required.</summary>
+    /// <summary>
+    /// Omits each of the four constructor dependencies in turn: the Start guard, parent-entry
+    /// policy, parent-exit policy, or lifecycle reporter. Construction must throw ArgumentNullException
+    /// naming the omitted parameter. This verifies that even lazily used session dependencies are
+    /// validated immediately rather than failing later when a recording is started.
+    /// </summary>
     /// <param name="nullParameter">The parameter to omit.</param>
     [TestMethod]
     [DataRow("canStartRecording")]
@@ -382,7 +451,12 @@ public sealed class RecorderHierarchyTests
         Assert.AreEqual(nullParameter, exception.ParamName);
     }
 
-    /// <summary>Separate recorders keep independent active children and parent policies.</summary>
+    /// <summary>
+    /// Creates two recorders with separate activity lists and different parent-entry policies.
+    /// Start succeeds on the first but is denied on the second. Their modes must remain Recording
+    /// and Idle respectively, with only the first reporting session/child entry. This verifies that
+    /// an instance's active hierarchy and permission behavior do not leak into another recorder.
+    /// </summary>
     [TestMethod]
     public void Instances_DoNotShareCompositeState()
     {
