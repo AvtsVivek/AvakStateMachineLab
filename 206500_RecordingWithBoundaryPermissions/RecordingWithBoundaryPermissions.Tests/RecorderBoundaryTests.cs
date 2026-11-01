@@ -285,9 +285,16 @@ public sealed class RecorderBoundaryTests
         CollectionAssert.AreEqual(new[] { "Exit Idle", "Enter RecordingSession", "Enter Recording" }, trace);
     }
 
-    /// <summary>Child exit failure retains Recording; child entry failure selects Paused. Neither exception becomes a result.</summary>
-    /// <param name="activity">The failing lifecycle hook.</param>
-    /// <param name="expectedMode">The selected mode after failure without rollback.</param>
+    /// <summary>
+    /// Child exit failure retains Recording; child entry failure selects Paused. Neither exception becomes a result.
+    /// Reaches Recording, then sends Pause through Recorder.TryHandle, which exercises
+    /// RecordingSessionState.ChangeSubstate. If Exit Recording throws, the old child remains
+    /// selected as Recording because replacement has not happened. If Enter Paused throws, Paused
+    /// has already been selected, so there is no rollback to Recording. In both cases the exception
+    /// propagates instead of becoming a transition result, and the trace confirms which hooks ran.
+    /// </summary>
+    /// <param name="activity">The child lifecycle hook that throws.</param>
+    /// <param name="expectedMode">The child still selected after the failure.</param>
     [TestMethod]
     [DataRow("Exit Recording", RecordingMode.Recording)]
     [DataRow("Enter Paused", RecordingMode.Paused)]
