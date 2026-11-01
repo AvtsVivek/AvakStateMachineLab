@@ -374,11 +374,24 @@ public sealed class RecorderHierarchyTests
     }
 
     /// <summary>
-    /// Attempts to send another Start while an outer Start is already being processed, either from
-    /// the parent-entry policy or the Exit Idle callback. The nested request must throw the expected
-    /// InvalidOperationException and leave the mode Idle. The trace distinguishes failure before
-    /// lifecycle work from failure during Idle exit. Disabling the nested request allows a later
-    /// Start to succeed, verifying reentrancy protection and recovery of the processing flag.
+    /// Attempts a nested Start while an outer Start is already being processed, either from
+    /// the parent-entry policy or the Exit Idle callback. 
+	/// If it is sent from the parent-entry policy(fromPermission = true), the policy runs before any lifecycle callback, so the trace stays empty.
+	/// (A lifecycle callback is code the state machine calls when a state is being entered or exited. 
+	/// In this example, those events are reported as messages such as "Enter Idle" and "Exit Idle".
+	/// The recorder receives a reportActivity callback, and the states call it during their entry and exit methods. 
+	/// In the test, that callback adds each message to a list.)
+	/// The nested request must throw the expected
+    /// InvalidOperationException and leave the mode Idle. 
+	/// 
+	/// The trace distinguishes failure before lifecycle work from failure during Idle exit. Disabling the nested request allows a later
+    /// Start to succeed, verifying reentrancy protection and recovery of the processing flag.	
+	/// For the next test case(fromPermission = false), it also tries to send a nested Start when it receives "Exit Idle".
+	/// in this case, that callback has already added "Exit Idle" to the trace, but the session has not yet been entered; 
+	/// the nested request throws and the mode stays Idle.
+    /// Disabling the nested request then allows Start to succeed, verifying reentrancy protection and recovery of the processing flag.
+	/// That differs from a permission callback such as canEnterSession: 
+	/// it decides whether a transition is allowed, rather than reporting a state’s entry or exit.
     /// </summary>
     /// <param name="fromPermission">True to nest from parent permission, false to nest from lifecycle reporting.</param>
     [TestMethod]

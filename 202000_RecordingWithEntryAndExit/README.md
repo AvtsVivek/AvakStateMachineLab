@@ -67,7 +67,7 @@ public void Enter(Action<string> reportActivity)
     => reportActivity("Enter Idle");
 ```
 
-`Enter` is the lifecycle action. `reportActivity` is a reporting callback invoked by that action, not the action itself. The console uses it to display the sequence; tests use it to capture a sequence for assertions. This keeps console output out of the state implementations.
+`Enter` is the lifecycle action/callback. A lifecycle callback is code the state machine calls when a state is being entered or exited. `reportActivity` is a reporting callback invoked by that action, not the action itself. The console uses it to display the sequence; tests use it to capture a sequence for assertions. This keeps console output out of the state implementations.
 
 Real entry/exit methods could instead subscribe and unsubscribe from events, activate state-specific resources, or release those resources. They can be parameterless `Enter()` and `Exit()` methods, with dependencies supplied through constructors or an appropriate context. Passing a callback as a method parameter is a simple choice for this learning exercise, not a framework design requirement. Reporting could also be provided through another dependency if needed.
 
