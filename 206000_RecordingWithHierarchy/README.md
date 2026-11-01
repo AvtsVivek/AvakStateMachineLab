@@ -42,6 +42,25 @@ Thus, an internal Pause/Resume can consult both parent permissions without runni
 
 This deliberately mirrors the delegation shape of ExecUI's child `CanEnter`/`CanExit` checks while keeping it small and explicit. It demonstrates that **permission checks and lifecycle hooks have different scopes**: parent permission can be consulted on a child transition even when the composite itself remains active.
 
+### Are parent permissions required for child-to-child transitions?
+
+**No. Hierarchy itself does not require parent entry/exit permission checks when switching children.** During Recording -> Paused, only Exit Recording and Enter Paused run. RecordingSession remains active: the transition neither enters nor leaves the parent.
+
+If `canEnterSession` means "may we enter this session?" and `canExitSession` means "may we leave this session?", their clearer scope is the parent boundary:
+
+| Transition | Parent permission checks under a boundary-only policy |
+|---|---|
+| Idle -> RecordingSession / Recording | `canEnterSession` |
+| Recording -> Paused | None |
+| Paused -> Recording | None |
+| RecordingSession / active child -> Idle | `canExitSession` |
+
+The separate `canStartRecording` guard would still apply to Start. If Pause or Resume requires its own permission, a transition-specific guard such as `canPauseRecording` or `canResumeRecording` expresses that requirement more precisely.
+
+The current exercise checks parent permissions during sibling transitions as an explicit policy choice, modeled on ExecUI's base child states delegating `CanEnter` and `CanExit` to their parent. This is not a universal requirement of hierarchical state machines. That broader policy lets a parent gate transitions inside the session, but it mixes permission to cross the parent boundary with permission to change children. The names `canEnterSession` and `canExitSession` suggest boundary checks more strongly than this broader meaning.
+
+**Recommended refinement:** restrict these parent checks to entering and leaving RecordingSession, aligning their scope with the parent lifecycle boundary. Retain ExecUI's broader delegation as a documented comparison rather than treating it as the default hierarchy rule. This recommendation is documentation only: the current implementation, tests, diagram, and console output still demonstrate checks during Pause and Resume.
+
 ## Design
 
 - `RecordingSessionState` owns the exclusive active child and performs parent/child lifecycle ordering.

@@ -516,3 +516,11 @@ The exercise separately injects a Start-specific permission, plus parent-level `
 This mirrors the delegation shape in ExecUI's `StateBase.CanEnter` and `CanExit`, where a child delegates the check to its parent, and the state-machine coordinator checks permissions before lifecycle work. It intentionally distinguishes permission evaluation from parent lifecycle: permission may be checked during an internal child transition while parent Enter/Exit remains untouched.
 
 Do not confuse this exclusive composite with ExecUI's `ParallelStateBase`, which can represent multiple active substates. The exercise's RecordingSession has exactly one active child. It introduces only one level of hierarchy, synchronous hooks, and simple injected policies; it is not a general state-machine framework.
+
+## 19. Parent-boundary permissions
+
+Hierarchy does not require parent permissions on sibling changes. The broader checks in `206000` are an explicit policy choice resembling ExecUI's delegation, not a universal state-machine rule. If CanEnter means permission to enter the session and CanExit means permission to leave it, checking them during Pause or Resume conflates boundary permission with permission to change a child.
+
+`206500_RecordingWithBoundaryPermissions` keeps the same hierarchy but restricts checks to boundary crossings. Start checks `canStartRecording`, then `canEnterSession`; Stop checks `canExitSession`. Pause and Resume run no permission callbacks, because RecordingSession remains active. They succeed even when parent policies are false, or would throw if called. Optional restrictions on these actions would be separate transition guards such as `canPauseRecording`.
+
+Lifecycle order and lazy allocation remain unchanged: Start creates the session only after both policies pass, enters the parent then its child, and Stop exits child then parent. The inactive session object is retained for later Starts, but permissions are evaluated afresh. Compare the two exercises to separate hierarchy mechanics from policy scope; `206000` remains unchanged.

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="RecordingWithBoundaryPermissions.Tests/RecordingWithBoundaryPermissions.Tests.csproj" />
+  <Project Path="RecordingWithBoundaryPermissions/RecordingWithBoundaryPermissions.csproj" />
+</Solution>

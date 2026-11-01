@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 630" role="img" aria-labelledby="title description">
+  <title id="title">Recording hierarchy with boundary-only permissions</title>
+  <desc id="description">Idle lies outside RecordingSession. Start checks Start and session entry permission and enters Recording. Pause and Resume switch exclusive children without policies or parent hooks. Stop from either child checks session exit permission and returns to Idle.</desc>
+  <defs>
+	<marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0 0 L10 4 L0 8 Z" fill="#334155"/></marker>
+	<style>
+	  text { font-family: "Segoe UI", Arial, sans-serif; fill: #172033; }
+	  .edge { fill: none; stroke: #334155; stroke-width: 2.5; marker-end: url(#arrow); }
+	  .state { fill: #eff6ff; stroke: #2563eb; stroke-width: 2; }
+	  .label { font-size: 16px; text-anchor: middle; paint-order: stroke; stroke: white; stroke-width: 4px; }
+	  .name { font-size: 22px; font-weight: 600; text-anchor: middle; }
+	</style>
+  </defs>
+  <rect width="1000" height="630" fill="white"/>
+  <text x="35" y="40" font-size="24" font-weight="600">Parent permissions apply only at the boundary</text>
+  <rect x="365" y="90" width="590" height="355" rx="22" fill="#f0fdf4" stroke="#15803d" stroke-width="2"/>
+  <text x="390" y="125" font-size="22" font-weight="600">RecordingSession</text>
+  <text x="390" y="153" font-size="16">Exactly one child active; parent stays active on child changes.</text>
+  <rect class="state" x="60" y="205" width="140" height="90" rx="15"/>
+  <text class="name" x="130" y="257">Idle</text>
+  <circle cx="25" cy="250" r="6" fill="#334155"/>
+  <path class="edge" d="M31 250 H60"/>
+  <rect class="state" x="430" y="205" width="170" height="90" rx="15"/>
+  <text class="name" x="515" y="257">Recording</text>
+  <rect class="state" x="755" y="205" width="150" height="90" rx="15"/>
+  <text class="name" x="830" y="257">Paused</text>
+  <path id="start" class="edge" d="M200 230 H430"/>
+  <text class="label" x="305" y="214">Start</text>
+  <path id="pause" class="edge" d="M600 225 H755"/>
+  <text class="label" x="677" y="209">Pause</text>
+  <path id="resume" class="edge" d="M755 275 H600"/>
+  <text class="label" x="677" y="303">Resume</text>
+  <path id="stop-recording" class="edge" d="M515 295 V380 H175 V295"/>
+  <text class="label" x="340" y="371">Stop from Recording</text>
+  <path id="stop-paused" class="edge" d="M830 295 V475 H95 V295"/>
+  <text class="label" x="470" y="467">Stop from Paused</text>
+  <text x="35" y="520" font-size="17">Start: canStartRecording -&gt; canEnterSession. Stop: canExitSession.</text>
+  <text x="35" y="549" font-size="17">Pause / Resume: no permission checks; exit source child -&gt; enter target child.</text>
+  <text x="35" y="578" font-size="17">Start enters parent then child. Stop exits child then parent.</text>
+  <text x="35" y="607" font-size="17">Denied or invalid requests: no hooks, active mode unchanged.</text>
+</svg>
