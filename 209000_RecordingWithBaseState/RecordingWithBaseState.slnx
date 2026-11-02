@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="RecordingWithBaseState.Tests/RecordingWithBaseState.Tests.csproj" />
+  <Project Path="RecordingWithBaseState/RecordingWithBaseState.csproj" />
+</Solution>
