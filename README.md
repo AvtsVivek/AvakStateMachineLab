@@ -16,4 +16,5 @@ Exercises are self-contained and ordered by six-digit prefixes, with gaps for in
 - **207000_RecordingWithBoundaryPermissions**: restrict parent permissions to entering and leaving RecordingSession; child changes keep the parent active without policy checks. Open `207000_RecordingWithBoundaryPermissions\RecordingWithBoundaryPermissions.slnx`.
 - **208000_RecordingWithStatePermissions**: return to flat states and combine state-wide CanEnter/CanExit permissions with a Start-only transition guard. Open `208000_RecordingWithStatePermissions\RecordingWithStatePermissions.slnx`.
 - **209000_RecordingWithBaseState**: extract shared permission defaults, lifecycle reporting, and debugger display into an abstract base state without changing the flat recorder behavior. Open `209000_RecordingWithBaseState\RecordingWithBaseState.slnx`.
+- **210000_RecordingWithCachedStates**: lazily cache and reuse one state instance per mode per recorder, preserving recorder-specific policies and lifecycle behavior. Open `210000_RecordingWithCachedStates\RecordingWithCachedStates.slnx`.
 

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="RecordingWithCachedStates.Tests/RecordingWithCachedStates.Tests.csproj" />
+  <Project Path="RecordingWithCachedStates/RecordingWithCachedStates.csproj" />
+</Solution>
