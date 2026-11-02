@@ -49,8 +49,4 @@ Unlike the switch exercise, there is no central switch mapping every state/reque
 
 The enum is optional; it is not required by the State pattern. The state objects decide behavior, while `RecordingMode` provides a strongly typed description for console output and test assertions without exposing the internal state implementations.
 
-`Recorder.CurrentState` derives its value from `_currentState.Mode`. There is no independently stored enum field to synchronize, but each state still needs a correct mapping, and adding states may require extending the enum. This is intentional duplication with a maintenance cost.
-
-Alternatives include exposing a descriptive name, exposing a read-only state view, or reporting only meaningful observations such as `IsRecording`. Exposing the existing behavioral interface solely for observation would unnecessarily reveal implementation details.
-
-`CurrentMode` would better describe the enum-valued property, but this discussion does not rename the current API. See [section 12 of the root Discussion.md](../Discussion.md#12-why-keep-recordingmode-alongside-state-classes) for the detailed rationale and alternatives.
+`Recorder.CurrentState` derives its value from `_currentState.Mode`. There is no independently stored enum field to synchronize, but each state needs a correct mapping, and adding states may require extending the enum. This is a deliberate observability trade-off: callers and tests get a strongly typed mode without exposing internal behavioral objects. `CurrentMode` would better describe this enum-valued property, but this exercise keeps the existing API. Other designs could expose a read-only state view, selected observations such as `IsRecording`, or no state detail at all.

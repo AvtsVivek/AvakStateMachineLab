@@ -42,7 +42,7 @@ Checks stop at the first false result. Any denied guard or state permission retu
 
 The console reports application policy calls, not methods that just return true. Therefore Resume prints only its lifecycle activity, even though the coordinator still checks its source and target permission methods. Initial Idle entry is initialization rather than a request-driven transition; it evaluates no permissions.
 
-See [section 20 of Discussion.md](../Discussion.md#20-flat-state-permissions-and-transition-guards) for the comparison, and [205000](../205000_RecordingWithTransitionTable/README.md) for the earlier transition-table approach. The state factory switch only constructs objects; transition selection still lives in the table.
+Compare this example with [203000](../203000_RecordingWithGuards/README.md): the Start-only rule is still a transition guard, while `CanEnter` and `CanExit` apply across all incoming or outgoing transitions for their state. The scopes are design choices, not a universal taxonomy; some state-machine libraries represent every restriction as a transition guard. See [205000](../205000_RecordingWithTransitionTable/README.md) for the earlier transition-table approach. The state factory switch only constructs objects; transition selection still lives in the table.
 
 ## Run
 

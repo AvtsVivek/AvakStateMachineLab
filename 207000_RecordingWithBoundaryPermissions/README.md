@@ -22,7 +22,7 @@ Checks stop at the first denial. Denied boundary transitions return `GuardDenied
 
 ### Compare with 206000
 
-The earlier lesson deliberately checks parent permissions when changing children, resembling ExecUI's base-child delegation. This is a policy choice, not a requirement of hierarchy. Here `canEnterSession` means permission to enter the parent and `canExitSession` means permission to leave it. The parent lifecycle trace is identical in both lessons; only which policies run changes. See [section 19 of Discussion.md](../Discussion.md#19-parent-boundary-permissions) for the rationale.
+The earlier lesson deliberately checks parent permissions when changing children, resembling a parent-delegation policy. This is a policy choice, not a requirement of hierarchy. Here `canEnterSession` means permission to enter the parent and `canExitSession` means permission to leave it. The parent lifecycle trace is identical in both lessons; only which policies run changes. Compare this README with [206000](../206000_RecordingWithHierarchy/README.md) to separate hierarchy mechanics from the chosen permission scope.
 
 ## Implementation
 

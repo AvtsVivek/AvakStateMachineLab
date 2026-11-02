@@ -37,7 +37,7 @@ Recorder still looks up a valid transition, checks the transition guard, source 
 - Recording + Stop -> Idle checks Recording.CanExit, then unrestricted Idle.CanEnter.
 - Paused + Resume -> Recording and Paused + Stop -> Idle use only unrestricted state permissions.
 
-Undefined pairs return InvalidRequest without checks. A false condition returns GuardDenied without lifecycle work. Permission callbacks are evaluated afresh. Initial Idle entry runs its inherited Enter hook without permission checks. See [section 21 of Discussion.md](../Discussion.md#21-sharing-state-behavior-with-a-base-class) for the design tradeoffs.
+Undefined pairs return InvalidRequest without checks. A false condition returns GuardDenied without lifecycle work. Permission callbacks are evaluated afresh. Initial Idle entry runs its inherited Enter hook without permission checks. The base class is an implementation convenience, not state-machine hierarchy: it is never active and owns no child states. Virtual overrides replace base behavior unless they explicitly call `base`; the shared defaults reduce repetition but couple subclasses to the base class and use C#'s single class-inheritance slot. Prefer composition when behaviors vary independently.
 
 ## State diagram
 

@@ -33,7 +33,9 @@ For an accepted Start, the order is **guard -> Exit Idle -> replace state -> Ent
 
 They are related permission checks, but their scope differs. A coordinator can check source `CanExit` and destination `CanEnter` for every transition. A transition guard instead restricts a particular source/request/destination combination.
 
-Putting our permission in a general Recording `CanEnter` check could restrict both Start and Resume. This exercise intentionally restricts only Start from Idle, so it uses a transition-specific guard. No transition class or generic state-machine engine is required. See [section 15 of the root Discussion.md](../Discussion.md#15-transition-guards-versus-canenter-and-canexit) for the comparison with the existing application studied earlier.
+Putting this permission in a general Recording `CanEnter` check could restrict both Start and Resume. This exercise intentionally restricts only Start from Idle, so it uses a transition-specific guard. A state-wide `CanEnter`/`CanExit` rule is appropriate when the same restriction should apply to every transition entering or leaving that state; a transition guard is more precise when a rule applies only to one source/request/target combination. These approaches can coexist. See [208000](../208000_RecordingWithStatePermissions/README.md) for a concrete comparison with state-wide permissions. No transition class or generic state-machine engine is required.
+
+The guard answers whether starting is permitted, not whether a device actually started recording. It is checked before lifecycle work and should not perform side effects. If a real start operation is asynchronous or can fail after permission succeeds, model that outcome separately—for example, with a `Starting` state and success/failure triggers.
 
 ## Run
 
