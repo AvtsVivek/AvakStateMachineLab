@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="RecordingWithStatePermissions.Tests/RecordingWithStatePermissions.Tests.csproj" />
+  <Project Path="RecordingWithStatePermissions/RecordingWithStatePermissions.csproj" />
+</Solution>

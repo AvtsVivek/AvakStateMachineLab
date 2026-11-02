@@ -1,4 +1,4 @@
-# 206500 - Recording with boundary permissions
+# 207000 - Recording with boundary permissions
 
 This standalone .NET 10 exercise refines [206000's hierarchy](../206000_RecordingWithHierarchy/README.md) without changing that example. RecordingSession still contains exactly one active child, Recording or Paused. The change is **permission scope**, not hierarchy or lifecycle order.
 

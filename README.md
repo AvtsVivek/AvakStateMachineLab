@@ -13,4 +13,6 @@ Exercises are self-contained and ordered by six-digit prefixes, with gaps for in
 - **204000_RecordingWithTransitionResults**: distinguish successful transitions, invalid requests, and guard denial with a typed result. Open `204000_RecordingWithTransitionResults\RecordingWithTransitionResults.slnx`.
 - **205000_RecordingWithTransitionTable**: express the same state/request/target rules as centralized data while keeping the transition guard and lifecycle behavior. Open `205000_RecordingWithTransitionTable\RecordingWithTransitionTable.slnx`.
 - **206000_RecordingWithHierarchy**: put Recording and Paused inside a RecordingSession composite and study parent lifecycle and permission checks. Open `206000_RecordingWithHierarchy\RecordingWithHierarchy.slnx`.
-- **206500_RecordingWithBoundaryPermissions**: restrict parent permissions to entering and leaving RecordingSession; child changes keep the parent active without policy checks. Open `206500_RecordingWithBoundaryPermissions\RecordingWithBoundaryPermissions.slnx`.
+- **207000_RecordingWithBoundaryPermissions**: restrict parent permissions to entering and leaving RecordingSession; child changes keep the parent active without policy checks. Open `207000_RecordingWithBoundaryPermissions\RecordingWithBoundaryPermissions.slnx`.
+- **208000_RecordingWithStatePermissions**: return to flat states and combine state-wide CanEnter/CanExit permissions with a Start-only transition guard. Open `208000_RecordingWithStatePermissions\RecordingWithStatePermissions.slnx`.
+
