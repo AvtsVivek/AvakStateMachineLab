@@ -1,6 +1,7 @@
 namespace RecordingWithBoundaryPermissions;
 
 /// <summary>Provides lifecycle behavior for the session's Paused child.</summary>
+[System.Diagnostics.DebuggerDisplay("{Mode.ToString(),nq}")]
 internal sealed class PausedState : IRecordingSubstate
 {
     /// <inheritdoc />

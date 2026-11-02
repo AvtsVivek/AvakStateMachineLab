@@ -1,6 +1,7 @@
 namespace RecordingWithTransitionResults;
 
 /// <summary>Accepts Pause and Stop without evaluating the Start guard.</summary>
+[System.Diagnostics.DebuggerDisplay("{Mode.ToString(),nq}")]
 internal sealed class RecordingState : IRecorderState
 {
     /// <inheritdoc />

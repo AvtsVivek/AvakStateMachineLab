@@ -3,6 +3,7 @@ namespace RecordingWithEntryAndExit;
 /// <summary>
 /// Allows recording to start from idle and reports idle entry and exit activity.
 /// </summary>
+[System.Diagnostics.DebuggerDisplay("{Mode.ToString(),nq}")]
 internal sealed class IdleState : IRecorderState
 {
     /// <inheritdoc />

@@ -1,6 +1,7 @@
 namespace RecordingWithBoundaryPermissions;
 
 /// <summary>Provides lifecycle behavior outside the recording session.</summary>
+[System.Diagnostics.DebuggerDisplay("{Mode.ToString(),nq}")]
 internal sealed class IdleState
 {
     /// <summary>Gets the mode represented by this top-level state.</summary>

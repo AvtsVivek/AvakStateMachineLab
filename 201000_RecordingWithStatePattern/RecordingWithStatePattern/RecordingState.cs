@@ -3,6 +3,7 @@ namespace RecordingWithStatePattern;
 /// <summary>
 /// Handles requests while the recorder is recording.
 /// </summary>
+[System.Diagnostics.DebuggerDisplay("{Mode.ToString(),nq}")]
 internal sealed class RecordingState : IRecorderState
 {
     /// <inheritdoc />

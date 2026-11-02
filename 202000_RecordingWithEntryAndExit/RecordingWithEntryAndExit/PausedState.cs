@@ -3,6 +3,7 @@ namespace RecordingWithEntryAndExit;
 /// <summary>
 /// Allows a paused recording to resume or stop and reports paused entry and exit activity.
 /// </summary>
+[System.Diagnostics.DebuggerDisplay("{Mode.ToString(),nq}")]
 internal sealed class PausedState : IRecorderState
 {
     /// <inheritdoc />

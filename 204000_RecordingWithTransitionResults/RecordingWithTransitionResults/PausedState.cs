@@ -1,6 +1,7 @@
 namespace RecordingWithTransitionResults;
 
 /// <summary>Accepts Resume and Stop; resuming does not require Start permission.</summary>
+[System.Diagnostics.DebuggerDisplay("{Mode.ToString(),nq}")]
 internal sealed class PausedState : IRecorderState
 {
     /// <inheritdoc />

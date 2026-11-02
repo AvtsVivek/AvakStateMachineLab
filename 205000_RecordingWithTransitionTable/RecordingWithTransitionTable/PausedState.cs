@@ -1,6 +1,7 @@
 namespace RecordingWithTransitionTable;
 
 /// <summary>Provides lifecycle hooks for the Paused mode; transition decisions live in the table.</summary>
+[System.Diagnostics.DebuggerDisplay("{Mode.ToString(),nq}")]
 internal sealed class PausedState : IRecorderState
 {
     /// <inheritdoc />

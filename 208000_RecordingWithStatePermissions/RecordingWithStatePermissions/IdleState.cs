@@ -1,6 +1,7 @@
 namespace RecordingWithStatePermissions;
 
 /// <summary>Allows unrestricted entry and exit; Start's guard belongs to its transition.</summary>
+[System.Diagnostics.DebuggerDisplay("{Mode.ToString(),nq}")]
 internal sealed class IdleState : IRecorderState
 {
     /// <inheritdoc />

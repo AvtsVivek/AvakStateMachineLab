@@ -1,6 +1,7 @@
 namespace RecordingWithBoundaryPermissions;
 
 /// <summary>Provides lifecycle behavior for the session's Recording child.</summary>
+[System.Diagnostics.DebuggerDisplay("{Mode.ToString(),nq}")]
 internal sealed class RecordingState : IRecordingSubstate
 {
     /// <inheritdoc />

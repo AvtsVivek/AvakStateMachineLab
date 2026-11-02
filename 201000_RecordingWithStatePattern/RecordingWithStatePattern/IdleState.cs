@@ -3,6 +3,7 @@ namespace RecordingWithStatePattern;
 /// <summary>
 /// Handles requests while the recorder is idle.
 /// </summary>
+[System.Diagnostics.DebuggerDisplay("{Mode.ToString(),nq}")]
 internal sealed class IdleState : IRecorderState
 {
     /// <inheritdoc />

@@ -1,6 +1,7 @@
 namespace RecordingWithStatePermissions;
 
 /// <summary>Applies the same exit restriction to both Pause and Stop, regardless of destination.</summary>
+[System.Diagnostics.DebuggerDisplay("{Mode.ToString(),nq}")]
 internal sealed class RecordingState : IRecorderState
 {
     private readonly Func<bool> _canLeaveRecording;

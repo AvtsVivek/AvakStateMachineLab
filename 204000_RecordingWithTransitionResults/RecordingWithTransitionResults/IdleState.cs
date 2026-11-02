@@ -1,6 +1,7 @@
 namespace RecordingWithTransitionResults;
 
 /// <summary>Accepts Start only when the transition-specific permission check succeeds.</summary>
+[System.Diagnostics.DebuggerDisplay("{Mode.ToString(),nq}")]
 internal sealed class IdleState : IRecorderState
 {
     /// <inheritdoc />

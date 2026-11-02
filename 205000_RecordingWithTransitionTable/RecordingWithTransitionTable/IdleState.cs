@@ -1,6 +1,7 @@
 namespace RecordingWithTransitionTable;
 
 /// <summary>Provides lifecycle hooks for the Idle mode; transition decisions live in the table.</summary>
+[System.Diagnostics.DebuggerDisplay("{Mode.ToString(),nq}")]
 internal sealed class IdleState : IRecorderState
 {
     /// <inheritdoc />

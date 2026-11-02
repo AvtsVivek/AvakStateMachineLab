@@ -1,6 +1,7 @@
 namespace RecordingWithHierarchy;
 
 /// <summary>Provides lifecycle hooks for the Paused child of the active session.</summary>
+[System.Diagnostics.DebuggerDisplay("{Mode.ToString(),nq}")]
 internal sealed class PausedState : IRecordingSubstate
 {
     /// <inheritdoc />

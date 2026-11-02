@@ -1,6 +1,7 @@
 namespace RecordingWithHierarchy;
 
 /// <summary>Provides lifecycle hooks for the top-level Idle state.</summary>
+[System.Diagnostics.DebuggerDisplay("{Mode.ToString(),nq}")]
 internal sealed class IdleState
 {
     /// <summary>Gets the mode represented by this top-level state.</summary>

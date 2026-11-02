@@ -3,6 +3,7 @@ namespace RecordingWithEntryAndExit;
 /// <summary>
 /// Allows an active recording to pause or stop and reports recording entry and exit activity.
 /// </summary>
+[System.Diagnostics.DebuggerDisplay("{Mode.ToString(),nq}")]
 internal sealed class RecordingState : IRecorderState
 {
     /// <inheritdoc />

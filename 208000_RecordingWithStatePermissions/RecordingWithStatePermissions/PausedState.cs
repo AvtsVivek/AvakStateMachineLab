@@ -1,6 +1,7 @@
 namespace RecordingWithStatePermissions;
 
 /// <summary>Requires permission to enter Paused, while allowing unrestricted departure.</summary>
+[System.Diagnostics.DebuggerDisplay("{Mode.ToString(),nq}")]
 internal sealed class PausedState : IRecorderState
 {
     private readonly Func<bool> _canEnterPaused;
