@@ -31,6 +31,12 @@ public sealed class TransitionTable
         });
         XDocument document = XDocument.Load(reader);
         XElement root = document.Root ?? throw new FormatException("The configuration must have a recorder root element.");
+        ValidatedConfiguration configuration = ValidateConfiguration(root);
+        return new TransitionTable(configuration.InitialMode, configuration.Definitions);
+    }
+
+    private static ValidatedConfiguration ValidateConfiguration(XElement root)
+    {
         if (root.Name != "recorder")
         {
             throw new FormatException("The configuration root element must be 'recorder'.");
@@ -103,7 +109,7 @@ public sealed class TransitionTable
             }
         }
 
-        return new TransitionTable(initialMode, definitions);
+        return new ValidatedConfiguration(initialMode, definitions);
     }
 
     internal bool TryGet(RecordingMode source, RecordingRequest request, out TransitionDefinition? definition)
@@ -144,4 +150,8 @@ public sealed class TransitionTable
 
     private static string? OptionalAttribute(XElement element, string name)
         => (string?)element.Attribute(name);
+
+    private sealed record ValidatedConfiguration(
+        RecordingMode InitialMode,
+        Dictionary<(RecordingMode Source, RecordingRequest Request), TransitionDefinition> Definitions);
 }

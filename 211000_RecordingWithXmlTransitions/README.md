@@ -24,11 +24,11 @@ This standalone .NET 10 exercise builds on [210000's cached states](../210000_Re
 
 The runtime resolves XML names to the existing `RecordingMode` and `RecordingRequest` enum values. It does not use reflection or construct classes named by the XML. `Recorder` still owns dispatch, permission checks, lifecycle calls, cached states, and exception behavior. The `StartPermission` guard delegates to the injected callback; state-wide `CanEnter` and `CanExit` behavior remains in the state objects.
 
-This is deliberately a small flat configuration format, not a general XML state-machine language. It has one file, three explicitly supported states, four trigger names, and one supported transition guard. There are no nested states, parallel regions, arbitrary code actions, or user-specified types.
+This is deliberately a small flat configuration format, not a general XML state-machine language. It has one file, three explicitly supported states, four trigger names, and one supported transition guard. It has no hierarchical parent/child states or parallel regions. XML cannot specify executable code or select C# classes or assemblies for the runtime to instantiate.
 
 ## Configuration validation
 
-`TransitionTable.Load` validates the complete XML before the recorder starts. It rejects malformed XML through `XmlReader`/`XDocument` errors and reports a `FormatException` for invalid configuration, including:
+`TransitionTable.Load` reads the XML, then calls its separate `ValidateConfiguration` method to check the document structure, names, and transition references before building the table. The recorder receives the table only after validation succeeds. Malformed XML is reported by `XmlReader`/`XDocument`; well-formed XML that violates the configuration contract produces a `FormatException`, including:
 
 - Invalid or undeclared initial states.
 - Unknown state, trigger, or target names.
@@ -37,8 +37,9 @@ This is deliberately a small flat configuration format, not a general XML state-
 - Duplicate state declarations or source/trigger transitions.
 - Unsupported attributes, elements, or guards.
 - Numeric enum aliases, so XML must use the exact named values.
+- Child elements inside a transition. For example, `<action />` is not a supported action feature; it is only an example of an unsupported child element that the loader rejects. XML does not execute code.
 
-The loader prohibits DTD processing and does not resolve external XML resources. The XML file is copied beside the executable and loaded at startup. The example fails visibly if the file is absent or invalid; it does not silently fall back to a C# transition table.
+The loader prohibits DTD processing and does not resolve external XML resources.
 
 ## What this example demonstrates
 

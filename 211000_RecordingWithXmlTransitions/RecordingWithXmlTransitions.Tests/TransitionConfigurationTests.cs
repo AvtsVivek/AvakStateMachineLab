@@ -201,7 +201,7 @@ public sealed class TransitionConfigurationTests
     }
 
     [TestMethod]
-    public void Load_NestedTransitionElement_ThrowsFormatException()
+    public void Load_TransitionWithChildElement_ThrowsFormatException()
     {
         const string xml = "<recorder initial=\"Idle\"><state name=\"Idle\"><transition trigger=\"Start\" target=\"Recording\"><action /></transition></state><state name=\"Recording\" /></recorder>";
 
