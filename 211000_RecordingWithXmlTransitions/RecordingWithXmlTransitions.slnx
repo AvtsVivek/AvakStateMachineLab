@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="RecordingWithXmlTransitions.Tests/RecordingWithXmlTransitions.Tests.csproj" />
+  <Project Path="RecordingWithXmlTransitions/RecordingWithXmlTransitions.csproj" />
+</Solution>
