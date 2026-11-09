@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="RecordingWithSourceAwareTriggers.Tests/RecordingWithSourceAwareTriggers.Tests.csproj" />
+  <Project Path="RecordingWithSourceAwareTriggers/RecordingWithSourceAwareTriggers.csproj" />
+</Solution>

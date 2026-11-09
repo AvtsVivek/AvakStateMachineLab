@@ -3,7 +3,7 @@ A hands-on exploration of the State pattern and state machines in .NET.
 
 ## Learning approach
 
-The exercises use a small recorder lifecycle to study one design choice at a time. They are original, standalone teaching examples: they do not record audio or video, depend on a UI or device, or attempt to be a general-purpose state-machine framework. The progression starts with a switch, then compares state objects, lifecycle hooks, guards, results, transition tables, hierarchy, state permissions, shared base behavior, cached state instances, and XML-configured transitions. Read neighboring exercises to see what changed and what stayed constant.
+The exercises use a small recorder lifecycle to study one design choice at a time. They are original, standalone teaching examples: they do not record audio or video, depend on a UI or device, or attempt to be a general-purpose state-machine framework. The progression starts with a switch, then compares state objects, lifecycle hooks, guards, results, transition tables, hierarchy, state permissions, shared base behavior, cached state instances, XML-configured transitions, and source-aware trigger matching. Read neighboring exercises to see what changed and what stayed constant.
 
 A state describes the situation the system is currently in. A transition is a permitted change from a source state to a target state, usually selected using both the current state and an incoming input. The State pattern puts state-dependent behavior in state objects; a table-driven design represents transition choices as data. These are related approaches, but they organize behavior differently.
 
@@ -49,4 +49,4 @@ Exercises are self-contained and ordered by six-digit prefixes, with gaps for in
 - **209000_RecordingWithBaseState**: extract shared permission defaults, lifecycle reporting, and debugger display into an abstract base state without changing the flat recorder behavior. Open `209000_RecordingWithBaseState\RecordingWithBaseState.slnx`.
 - **210000_RecordingWithCachedStates**: lazily cache and reuse one state instance per mode per recorder, preserving recorder-specific policies and lifecycle behavior. Open `210000_RecordingWithCachedStates\RecordingWithCachedStates.slnx`.
 - **211000_RecordingWithXmlTransitions**: load a validated flat transition table from XML while keeping typed state behavior and transition execution in C#. Open `211000_RecordingWithXmlTransitions\RecordingWithXmlTransitions.slnx`.
-
+- **212000_RecordingWithSourceAwareTriggers**: add an XML trigger catalog and distinguish triggers by both name and external source, in addition to the current state. Open `212000_RecordingWithSourceAwareTriggers\RecordingWithSourceAwareTriggers.slnx`.

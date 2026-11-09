@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<recorder initial="Idle">
+  <state name="Idle">
+    <transition trigger="Start" source="User" target="Recording" guard="StartPermission" />
+  </state>
+  <state name="Recording">
+    <transition trigger="Pause" source="User" target="Paused" />
+    <transition trigger="Pause" source="Device" target="Idle" />
+    <transition trigger="Stop" source="User" target="Idle" />
+  </state>
+  <state name="Paused">
+    <transition trigger="Resume" source="User" target="Recording" />
+    <transition trigger="Stop" source="User" target="Idle" />
+  </state>
+</recorder>
