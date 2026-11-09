@@ -7,6 +7,10 @@ namespace RecordingWithXmlDefinedTriggers.Tests;
 [TestClass]
 public sealed class XmlDefinedTriggerTests
 {
+    /// <summary>
+    /// Loads the shipped XML and exercises the full user-driven lifecycle with its custom names.
+    /// Asserts each dispatch succeeds, returns to Idle, and produces the exact ordered lifecycle trace.
+    /// </summary>
     [TestMethod]
     public void ShippedConfiguration_UsesXmlDefinedNamesForLifecycle()
     {
@@ -28,6 +32,10 @@ public sealed class XmlDefinedTriggerTests
         }, activity);
     }
 
+    /// <summary>
+    /// Defines BeginCaptureNow only in XML, then dispatches that exact identity.
+    /// Verifies an arbitrary catalog name works despite having no corresponding enum member.
+    /// </summary>
     [TestMethod]
     public void CustomNameNotRepresentedByEnum_IsAcceptedAndDispatched()
     {
@@ -44,6 +52,10 @@ public sealed class XmlDefinedTriggerTests
         Assert.AreEqual(RecordingMode.Recording, recorder.CurrentState);
     }
 
+    /// <summary>
+    /// Starts two recorders in the same state and sends PauseCapture from different sources.
+    /// Verifies that User enters Paused while Device follows its own configured path to Idle.
+    /// </summary>
     [TestMethod]
     public void SameNameFromDifferentSources_SelectsDifferentTransitions()
     {
@@ -59,6 +71,10 @@ public sealed class XmlDefinedTriggerTests
         Assert.AreEqual(RecordingMode.Idle, deviceRecorder.CurrentState);
     }
 
+    /// <summary>
+    /// Enters Recording, then varies only the case or declared identity of a trigger name/source.
+    /// Each mismatch must return InvalidRequest without changing the recorder state.
+    /// </summary>
     [TestMethod]
     public void UnknownNameOrSource_DoesNotFallback()
     {
@@ -71,6 +87,10 @@ public sealed class XmlDefinedTriggerTests
         Assert.AreEqual(RecordingMode.Recording, recorder.CurrentState);
     }
 
+    /// <summary>
+    /// Uses a catalog-declared Device trigger in Idle, where no matching transition exists.
+    /// Confirms catalog membership alone does not permit a transition in every state.
+    /// </summary>
     [TestMethod]
     public void DeclaredNameWithoutTransition_IsInvalidInCurrentState()
     {
@@ -80,6 +100,10 @@ public sealed class XmlDefinedTriggerTests
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
     }
 
+    /// <summary>
+    /// Sends an empty name and a whitespace-only source as invalid runtime inputs.
+    /// Both must throw ArgumentException before transition lookup.
+    /// </summary>
     [TestMethod]
     public void EmptyNameOrSource_IsRejected()
     {
@@ -89,6 +113,10 @@ public sealed class XmlDefinedTriggerTests
         Assert.ThrowsExactly<ArgumentException>(() => recorder.TryHandle(new("StartCapture", " ")));
     }
 
+    /// <summary>
+    /// Loads the shipped StartCapture transition with its guard denied.
+    /// Verifies GuardDenied leaves the recorder in Idle and performs no transition lifecycle work.
+    /// </summary>
     [TestMethod]
     public void StartPermissionGuard_DeniesBeforeLifecycleWork()
     {
@@ -100,14 +128,25 @@ public sealed class XmlDefinedTriggerTests
         CollectionAssert.AreEqual(new[] { "Enter Idle" }, activity);
     }
 
+    /// <summary>
+    /// Declares a state outside RecordingMode while keeping the configuration root valid.
+    /// The loader must reject the unknown state name with FormatException.
+    /// </summary>
     [TestMethod]
     public void Load_UnknownStateName_IsRejected()
     {
         Assert.ThrowsExactly<FormatException>(() => Load("""
-            <recorder initial="Idle"><triggers><trigger name="Begin" source="User" /></triggers><state name="Unknown" /></recorder>
+            <recorder initial="Idle">
+              <triggers><trigger name="Begin" source="User" /></triggers>
+              <state name="Unknown" />
+            </recorder>
             """));
     }
 
+    /// <summary>
+    /// Declares Begin/User but references Begin/Console from a transition.
+    /// The full identity must exist in the catalog; matching the name alone is insufficient.
+    /// </summary>
     [TestMethod]
     public void Load_UnknownTriggerIdentity_IsRejected()
     {
@@ -120,6 +159,10 @@ public sealed class XmlDefinedTriggerTests
             """));
     }
 
+    /// <summary>
+    /// Repeats the exact Begin/User identity in the catalog.
+    /// Duplicate pairs must fail rather than being silently coalesced.
+    /// </summary>
     [TestMethod]
     public void Load_DuplicateNameWithSameSource_IsRejected()
     {
@@ -131,6 +174,10 @@ public sealed class XmlDefinedTriggerTests
             """));
     }
 
+    /// <summary>
+    /// Validates empty catalogs, missing or blank fields, unsupported attributes, and invalid child elements.
+    /// Each row is well-formed XML that violates the catalog contract and must throw FormatException.
+    /// </summary>
     [TestMethod]
     [DataRow("<triggers />")]
     [DataRow("<triggers><trigger source=\"User\" /></triggers>")]
@@ -144,6 +191,10 @@ public sealed class XmlDefinedTriggerTests
         Assert.ThrowsExactly<FormatException>(() => Load(xml));
     }
 
+    /// <summary>
+    /// Supplies a DTD with an internal entity in the trigger name.
+    /// The secure XML reader must reject the declaration with XmlException.
+    /// </summary>
     [TestMethod]
     public void Load_Dtd_IsProhibited()
     {
@@ -157,6 +208,10 @@ public sealed class XmlDefinedTriggerTests
         Assert.ThrowsExactly<XmlException>(() => TransitionTable.Load(stream));
     }
 
+    /// <summary>
+    /// Passes a null input stream directly to the public loader.
+    /// The API must reject the argument with ArgumentNullException before reading XML.
+    /// </summary>
     [TestMethod]
     public void Load_NullStream_Throws()
     {
