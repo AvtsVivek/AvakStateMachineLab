@@ -9,7 +9,6 @@
 
   <ItemGroup>
 	<Content Include="recorder-transitions.xml" CopyToOutputDirectory="PreserveNewest" />
-	<Content Include="recorder-triggers.xml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

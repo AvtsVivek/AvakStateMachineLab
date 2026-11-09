@@ -21,14 +21,13 @@ public sealed class TransitionTable
     public RecordingMode InitialMode { get; }
 
     /// <summary>
-    /// Loads a transition table and verifies every trigger against the supplied catalog.
+    /// Loads the trigger catalog and transitions from one recorder configuration document.
     /// </summary>
     /// <exception cref="ArgumentNullException">The stream is null.</exception>
     /// <exception cref="FormatException">The XML is well-formed but violates the recorder configuration contract.</exception>
-    public static TransitionTable Load(Stream stream, TriggerCatalog catalog)
+    public static TransitionTable Load(Stream stream)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        ArgumentNullException.ThrowIfNull(catalog);
 
         using XmlReader reader = XmlReader.Create(stream, new XmlReaderSettings
         {
@@ -37,11 +36,11 @@ public sealed class TransitionTable
         });
         XDocument document = XDocument.Load(reader);
         XElement root = document.Root ?? throw new FormatException("The configuration must have a recorder root element.");
-        ValidatedConfiguration configuration = ValidateConfiguration(root, catalog);
+        ValidatedConfiguration configuration = ValidateConfiguration(root);
         return new TransitionTable(configuration.InitialMode, configuration.Definitions);
     }
 
-    private static ValidatedConfiguration ValidateConfiguration(XElement root, TriggerCatalog catalog)
+    private static ValidatedConfiguration ValidateConfiguration(XElement root)
     {
         if (root.Name != "recorder")
         {
@@ -50,12 +49,19 @@ public sealed class TransitionTable
 
         EnsureAttributes(root, "initial");
         RecordingMode initialMode = ParseEnum<RecordingMode>(RequiredAttribute(root, "initial"), "initial state");
-        List<XElement> stateElements = root.Elements().ToList();
-        if (stateElements.Any(element => element.Name != "state"))
+        if (root.Elements().Any(element => element.Name != "triggers" && element.Name != "state"))
         {
-            throw new FormatException("The recorder element can contain only state elements.");
+            throw new FormatException("The recorder element can contain only a triggers element and state elements.");
         }
 
+        List<XElement> catalogs = root.Elements("triggers").ToList();
+        if (catalogs.Count != 1)
+        {
+            throw new FormatException("The recorder element requires exactly one triggers element.");
+        }
+
+        TriggerCatalog catalog = TriggerCatalog.Load(catalogs[0]);
+        List<XElement> stateElements = root.Elements("state").ToList();
         HashSet<RecordingMode> declaredStates = [];
         Dictionary<(RecordingMode State, RecordingTrigger Trigger), TransitionDefinition> definitions = [];
 

@@ -5,10 +5,8 @@ bool leaveRecordingAllowed = true;
 bool enterPausedAllowed = true;
 
 string configurationPath = Path.Combine(AppContext.BaseDirectory, "recorder-transitions.xml");
-using FileStream catalogStream = File.OpenRead(Path.Combine(AppContext.BaseDirectory, "recorder-triggers.xml"));
-TriggerCatalog catalog = TriggerCatalog.Load(catalogStream);
 using FileStream configuration = File.OpenRead(configurationPath);
-TransitionTable transitionTable = TransitionTable.Load(configuration, catalog);
+TransitionTable transitionTable = TransitionTable.Load(configuration);
 var recorder = new Recorder(transitionTable,
     () => { Console.WriteLine("Check Start guard"); return startAllowed; },
     () => { Console.WriteLine("Check Recording.CanExit"); return leaveRecordingAllowed; },

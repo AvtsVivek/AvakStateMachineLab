@@ -1,30 +1,16 @@
-using System.Xml;
 using System.Xml.Linq;
 
 namespace RecordingWithSourceAwareTriggers;
 
-/// <summary>Loads the allowed trigger name and source identities from XML.</summary>
-public sealed class TriggerCatalog
+/// <summary>Validates trigger identities in the recorder configuration's triggers section.</summary>
+internal sealed class TriggerCatalog
 {
     private readonly HashSet<RecordingTrigger> _triggers;
 
     private TriggerCatalog(HashSet<RecordingTrigger> triggers) => _triggers = triggers;
 
-    public static TriggerCatalog Load(Stream stream)
+    internal static TriggerCatalog Load(XElement root)
     {
-        ArgumentNullException.ThrowIfNull(stream);
-        using XmlReader reader = XmlReader.Create(stream, new XmlReaderSettings
-        {
-            DtdProcessing = DtdProcessing.Prohibit,
-            XmlResolver = null
-        });
-        XElement root = XDocument.Load(reader).Root
-            ?? throw new FormatException("The trigger catalog must have a triggers root element.");
-        if (root.Name != "triggers")
-        {
-            throw new FormatException("The trigger catalog root element must be 'triggers'.");
-        }
-
         TransitionTable.EnsureAttributes(root);
         HashSet<RecordingTrigger> triggers = [];
         foreach (XElement element in root.Elements())

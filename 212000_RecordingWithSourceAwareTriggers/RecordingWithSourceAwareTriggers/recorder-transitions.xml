@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <recorder initial="Idle">
+  <triggers>
+    <trigger name="Start" source="User" />
+    <trigger name="Pause" source="User" />
+    <trigger name="Pause" source="Device" />
+    <trigger name="Resume" source="User" />
+    <trigger name="Stop" source="User" />
+  </triggers>
   <state name="Idle">
     <transition trigger="Start" source="User" target="Recording" guard="StartPermission" />
   </state>

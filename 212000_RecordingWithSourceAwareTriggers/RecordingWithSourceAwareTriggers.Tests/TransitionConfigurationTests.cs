@@ -1,4 +1,5 @@
 using System.Text;
+using System.Xml.Linq;
 using RecordingWithSourceAwareTriggers;
 
 namespace RecordingWithSourceAwareTriggers.Tests;
@@ -298,13 +299,13 @@ public sealed class TransitionConfigurationTests
     }
 
     /// <summary>
-    /// Passes a null transition stream alongside a valid catalog to isolate the stream argument check.
+    /// Passes a null recorder configuration stream to exercise the loader's argument check.
     /// Expects ArgumentNullException before XML parsing; null-forgiving syntax only permits the intentional test input.
     /// </summary>
     [TestMethod]
     public void Load_NullStream_ThrowsArgumentNullException()
     {
-        Assert.ThrowsExactly<ArgumentNullException>(() => TransitionTable.Load(null!, LoadCatalog()));
+        Assert.ThrowsExactly<ArgumentNullException>(() => TransitionTable.Load(null!));
     }
 
     /// <summary>
@@ -377,13 +378,9 @@ public sealed class TransitionConfigurationTests
 
     private static TransitionTable Load(string xml)
     {
-        using MemoryStream stream = new(Encoding.UTF8.GetBytes(xml));
-        return TransitionTable.Load(stream, LoadCatalog());
-    }
-
-    private static TriggerCatalog LoadCatalog()
-    {
-        const string xml = """
+        // Supply a valid embedded catalog so these fixtures isolate state and transition validation.
+        XElement root = XElement.Parse(xml);
+        root.AddFirst(XElement.Parse("""
             <triggers>
               <trigger name="Start" source="User" />
               <trigger name="Pause" source="User" />
@@ -391,8 +388,8 @@ public sealed class TransitionConfigurationTests
               <trigger name="Resume" source="User" />
               <trigger name="Stop" source="User" />
             </triggers>
-            """;
-        using MemoryStream stream = new(Encoding.UTF8.GetBytes(xml));
-        return TriggerCatalog.Load(stream);
+            """));
+        using MemoryStream stream = new(Encoding.UTF8.GetBytes(root.ToString()));
+        return TransitionTable.Load(stream);
     }
 }

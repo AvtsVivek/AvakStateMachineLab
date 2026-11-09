@@ -22,27 +22,33 @@ instances of the same state class, such as those used by separate recorders, are
 
 ## XML configuration
 
-The [trigger catalog](RecordingWithSourceAwareTriggers/recorder-triggers.xml)
-declares the allowed `(name, source)` pairs.
-enum names; sources are nonempty, case-sensitive strings. The same name can be
-declared for more than one source.
+One [configuration file](RecordingWithSourceAwareTriggers/recorder-transitions.xml)
+contains both the trigger catalog and the state transitions under a `recorder` root.
+Exactly one `triggers` section declares the allowed `(name, source)` pairs.
+Names are exact `RecordingRequest` enum names; sources are nonempty, case-sensitive
+strings. The same name can be declared for more than one source.
+
+Each transition references both fields and remains nested under its current state.
+For example, this complete configuration starts in Recording:
 
 ```xml
-<triggers>
-  <trigger name="Pause" source="User" />
-  <trigger name="Pause" source="Device" />
-</triggers>
+<recorder initial="Recording">
+  <triggers>
+    <trigger name="Pause" source="User" />
+    <trigger name="Pause" source="Device" />
+  </triggers>
+  <state name="Idle" />
+  <state name="Paused" />
+  <state name="Recording">
+    <transition trigger="Pause" source="User" target="Paused" />
+    <transition trigger="Pause" source="Device" target="Idle" />
+  </state>
+</recorder>
 ```
 
-The [transition table](RecordingWithSourceAwareTriggers/recorder-transitions.xml)
-references both fields. Each transition remains nested under its current state:
-
-```xml
-<state name="Recording">
-  <transition trigger="Pause" source="User" target="Paused" />
-  <transition trigger="Pause" source="Device" target="Idle" />
-</state>
-```
+The catalog may appear before or after the state declarations. The loader validates
+all trigger identities before resolving transition references. No separate catalog
+file or separate catalog-loading call is required.
 
 The `Device` transition is an illustrative, configured alternative; it does not
 represent a real device protocol. From Recording, `Pause` from `User` enters
@@ -50,14 +56,12 @@ Paused, whereas `Pause` from `Device` enters Idle. The normal User-driven
 walkthrough, Start guard, state permissions, and lifecycle behavior from 211000
 remain in place.
 
-Load the catalog first, pass it to the transition table loader, and supply both
-parts of a trigger when dispatching:
+Load the combined configuration and supply both parts of a trigger when dispatching.
+The following uses the shipped configuration, which starts in Idle:
 
 ```csharp
-using var catalogStream = File.OpenRead("recorder-triggers.xml");
-var catalog = TriggerCatalog.Load(catalogStream);
-using var transitionsStream = File.OpenRead("recorder-transitions.xml");
-var table = TransitionTable.Load(transitionsStream, catalog);
+using var configuration = File.OpenRead("recorder-transitions.xml");
+var table = TransitionTable.Load(configuration);
 
 var recorder = new Recorder(table, () => true, () => true, () => true, Console.WriteLine);
 recorder.TryHandle(new RecordingTrigger(RecordingRequest.Start, "User"));
@@ -69,11 +73,11 @@ catalog entry does not imply a transition in every state. An unmatched trigger
 returns `InvalidRequest`, with no fallback by name or by source. A missing or
 blank runtime source throws `ArgumentException`.
 
-Both loaders prohibit DTD processing and external resource resolution. The
-catalog rejects duplicate identities, invalid names, missing attributes and
-unsupported content. The transition loader rejects references absent from the
-catalog, duplicate state/trigger identities, undeclared states or targets, and
-unsupported guards and XML structure.
+The configuration loader prohibits DTD processing and external resource resolution.
+It requires exactly one embedded catalog and rejects duplicate identities, invalid
+names, missing attributes and unsupported elements or attributes. It also rejects
+references absent from the catalog, duplicate state/trigger identities, undeclared
+states or targets, and unsupported guards and XML structure.
 
 ## Run
 
@@ -91,7 +95,7 @@ state-machine framework.
 
 ## Code and tests
 
-- [TriggerCatalog](RecordingWithSourceAwareTriggers/TriggerCatalog.cs) loads and validates the trigger catalog.
-- [TransitionTable](RecordingWithSourceAwareTriggers/TransitionTable.cs) loads and looks up transitions.
+- [TriggerCatalog](RecordingWithSourceAwareTriggers/TriggerCatalog.cs) internally validates the embedded trigger section.
+- [TransitionTable](RecordingWithSourceAwareTriggers/TransitionTable.cs) loads the combined configuration and looks up transitions.
 - [Recorder](RecordingWithSourceAwareTriggers/Recorder.cs) handles guarded dispatch and lifecycle callbacks.
-- [Trigger source tests](RecordingWithSourceAwareTriggers.Tests/TriggerSourceTests.cs) exercise the shipped XML, trigger identities, and configuration validation.
+- [Trigger source tests](RecordingWithSourceAwareTriggers.Tests/TriggerSourceTests.cs) exercise the shipped XML, both retained identities for a shared name, and combined configuration validation.

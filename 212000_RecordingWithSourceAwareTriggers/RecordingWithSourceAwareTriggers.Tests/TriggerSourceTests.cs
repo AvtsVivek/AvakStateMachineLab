@@ -70,13 +70,35 @@ public sealed class TriggerSourceTests
     }
 
     /// <summary>
-    /// Loads two Pause declarations with different sources and expects loading to complete without throwing.
-    /// This acceptance case establishes that uniqueness is defined by the full name/source pair, not name alone.
+    /// Loads two Pause identities and references both from the same initial state.
+    /// Independent recorders must reach different targets for User and Device, proving both
+    /// catalog entries are retained and usable, not merely accepted without an exception.
     /// </summary>
     [TestMethod]
     public void Catalog_AllowsSameNameFromDifferentSources()
     {
-        LoadCatalog("""<triggers><trigger name="Pause" source="User" /><trigger name="Pause" source="Device" /></triggers>""");
+        using MemoryStream stream = XmlStream("""
+            <recorder initial="Recording">
+              <triggers>
+                <trigger name="Pause" source="User" />
+                <trigger name="Pause" source="Device" />
+              </triggers>
+              <state name="Idle" />
+              <state name="Paused" />
+              <state name="Recording">
+                <transition trigger="Pause" source="User" target="Paused" />
+                <transition trigger="Pause" source="Device" target="Idle" />
+              </state>
+            </recorder>
+            """);
+        TransitionTable table = TransitionTable.Load(stream);
+        Recorder userRecorder = new(table, () => true, () => true, () => true, _ => { });
+        Recorder deviceRecorder = new(table, () => true, () => true, () => true, _ => { });
+
+        Assert.AreEqual(TransitionResult.Transitioned, userRecorder.TryHandle(new(RecordingRequest.Pause, "User")));
+        Assert.AreEqual(RecordingMode.Paused, userRecorder.CurrentState);
+        Assert.AreEqual(TransitionResult.Transitioned, deviceRecorder.TryHandle(new(RecordingRequest.Pause, "Device")));
+        Assert.AreEqual(RecordingMode.Idle, deviceRecorder.CurrentState);
     }
 
     /// <summary>
@@ -100,14 +122,21 @@ public sealed class TriggerSourceTests
     }
 
     /// <summary>
-    /// Supplies a document type declaration with an internal entity used as a source value.
-    /// The XML reader must reject the DTD with XmlException before catalog validation;
+    /// Supplies a recorder document with an internal entity used in the embedded catalog.
+    /// The unified XML reader must reject the DTD with XmlException before catalog validation;
     /// even a local entity declaration must not be accepted by this configuration loader.
     /// </summary>
     [TestMethod]
     public void Catalog_DtdIsProhibited()
     {
-        Assert.ThrowsExactly<XmlException>(() => LoadCatalog("""<!DOCTYPE triggers [<!ENTITY x "User">]><triggers><trigger name="Pause" source="&x;" /></triggers>"""));
+        using MemoryStream stream = XmlStream("""
+            <!DOCTYPE recorder [<!ENTITY x "User">]>
+            <recorder initial="Idle">
+              <triggers><trigger name="Pause" source="&x;" /></triggers>
+              <state name="Idle" />
+            </recorder>
+            """);
+        Assert.ThrowsExactly<XmlException>(() => TransitionTable.Load(stream));
     }
 
     /// <summary>
@@ -122,37 +151,69 @@ public sealed class TriggerSourceTests
     [DataRow("""<transition trigger="Stop" source="Device" target="Idle" />""")]
     public void Transition_RequiresExactCatalogIdentity(string transition)
     {
-        TriggerCatalog catalog = LoadCatalog("""<triggers><trigger name="Pause" source="User" /><trigger name="Stop" source="User" /></triggers>""");
-        using MemoryStream stream = XmlStream($"""<recorder initial="Idle"><state name="Idle">{transition}</state></recorder>""");
-        Assert.ThrowsExactly<FormatException>(() => TransitionTable.Load(stream, catalog));
+        using MemoryStream stream = XmlStream($"""
+            <recorder initial="Idle">
+              <triggers>
+                <trigger name="Pause" source="User" />
+                <trigger name="Stop" source="User" />
+              </triggers>
+              <state name="Idle">{transition}</state>
+            </recorder>
+            """);
+        Assert.ThrowsExactly<FormatException>(() => TransitionTable.Load(stream));
     }
 
     /// <summary>
-    /// Checks two independent null-argument contracts: the transition loader needs a catalog,
-    /// and the catalog loader needs an input stream. Both must throw ArgumentNullException
-    /// before attempting XML validation; null-forgiving syntax enables these intentional invalid inputs.
+    /// Passes complete documents directly to the loader, without fixture composition.
+    /// Missing or repeated catalogs, unsupported root/section content, duplicate states,
+    /// and an initial state absent from the document must all fail with FormatException.
     /// </summary>
     [TestMethod]
-    public void NullCatalog_IsRejected()
+    [DataRow("""<recorder initial="Idle"><state name="Idle" /></recorder>""")]
+    [DataRow("""<recorder initial="Idle"><triggers /><triggers /><state name="Idle" /></recorder>""")]
+    [DataRow("""<other initial="Idle"><triggers /><state name="Idle" /></other>""")]
+    [DataRow("""<recorder initial="Idle" extra="x"><triggers /><state name="Idle" /></recorder>""")]
+    [DataRow("""<recorder initial="Idle"><triggers extra="x" /><state name="Idle" /></recorder>""")]
+    [DataRow("""<recorder initial="Idle"><triggers /><other /><state name="Idle" /></recorder>""")]
+    [DataRow("""<recorder initial="Idle"><triggers /><state name="Idle" /><state name="Idle" /></recorder>""")]
+    [DataRow("""<recorder initial="Idle"><triggers /></recorder>""")]
+    public void Load_InvalidCombinedConfiguration_Throws(string xml)
     {
-        using MemoryStream stream = XmlStream("<recorder initial=\"Idle\" />");
-        Assert.ThrowsExactly<ArgumentNullException>(() => TransitionTable.Load(stream, null!));
-        Assert.ThrowsExactly<ArgumentNullException>(() => TriggerCatalog.Load(null!));
+        using MemoryStream stream = XmlStream(xml);
+        Assert.ThrowsExactly<FormatException>(() => TransitionTable.Load(stream));
+    }
+
+    /// <summary>
+    /// Declares the catalog after a state that references it to verify document order does not
+    /// affect validation. Dispatch must resolve the later declaration and enter Recording.
+    /// </summary>
+    [TestMethod]
+    public void Load_CatalogAfterStates_ResolvesTriggerReferences()
+    {
+        using MemoryStream stream = XmlStream("""
+            <recorder initial="Idle">
+              <state name="Idle"><transition trigger="Start" source="User" target="Recording" /></state>
+              <state name="Recording" />
+              <triggers><trigger name="Start" source="User" /></triggers>
+            </recorder>
+            """);
+        Recorder recorder = new(TransitionTable.Load(stream), () => true, () => true, () => true, _ => { });
+
+        Assert.AreEqual(TransitionResult.Transitioned, recorder.TryHandle(new(RecordingRequest.Start, "User")));
+        Assert.AreEqual(RecordingMode.Recording, recorder.CurrentState);
     }
 
     private static Recorder CreateConfiguredRecorder()
     {
-        using FileStream catalogStream = File.OpenRead(Path.Combine(AppContext.BaseDirectory, "recorder-triggers.xml"));
-        TriggerCatalog catalog = TriggerCatalog.Load(catalogStream);
-        using FileStream transitionsStream = File.OpenRead(Path.Combine(AppContext.BaseDirectory, "recorder-transitions.xml"));
-        TransitionTable table = TransitionTable.Load(transitionsStream, catalog);
+        using FileStream stream = File.OpenRead(Path.Combine(AppContext.BaseDirectory, "recorder-transitions.xml"));
+        TransitionTable table = TransitionTable.Load(stream);
         return new Recorder(table, () => true, () => true, () => true, _ => { });
     }
 
-    private static TriggerCatalog LoadCatalog(string xml)
+    private static TransitionTable LoadCatalog(string xml)
     {
-        using MemoryStream stream = XmlStream(xml);
-        return TriggerCatalog.Load(stream);
+        using MemoryStream stream = XmlStream($"""<recorder initial="Idle">{xml}<state name="Idle" /></recorder>""");
+        return TransitionTable.Load(stream);
     }
 
     private static MemoryStream XmlStream(string xml) => new(Encoding.UTF8.GetBytes(xml));
