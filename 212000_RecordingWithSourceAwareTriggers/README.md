@@ -6,10 +6,24 @@ incoming trigger also has an explicit external source, such as `User` or `Device
 The trigger source is **not** the source state. It is an identifier supplied by
 the caller, not an authenticated identity.
 
+## State identity and behavior
+
+**The enum identifies the state; the class implements its behavior.**
+
+- `RecordingMode` defines the supported state identities: `Idle`, `Recording`, and `Paused`.
+- State classes such as `IdleState` and `RecordingState` implement lifecycle behavior and state permissions. Each reports its identity through its `Mode` property.
+- XML state names are parsed as exact `RecordingMode` names, not discovered from class names. For example, `name="Idle"` resolves to `RecordingMode.Idle`.
+- `StateFactory` maps each mode to its state implementation. Renaming a state class does not change its XML identity.
+
+The intended mapping is one implementation per mode. The factory explicitly selects
+that implementation; it does not scan for or reject other classes reporting the same
+mode. Separately, the XML loader rejects duplicate state declarations. Multiple
+instances of the same state class, such as those used by separate recorders, are valid.
+
 ## XML configuration
 
 The [trigger catalog](RecordingWithSourceAwareTriggers/recorder-triggers.xml)
-declares the allowed `(name, source)` pairs. Names are exact `RecordingRequest`
+declares the allowed `(name, source)` pairs.
 enum names; sources are nonempty, case-sensitive strings. The same name can be
 declared for more than one source.
 
@@ -74,3 +88,10 @@ The tests cover different sources with the same name and current state, missing
 or mismatched sources, catalog and transition validation, lifecycle order, and
 guards. This is a synchronous, single-threaded teaching example, not a general
 state-machine framework.
+
+## Code and tests
+
+- [TriggerCatalog](RecordingWithSourceAwareTriggers/TriggerCatalog.cs) loads and validates the trigger catalog.
+- [TransitionTable](RecordingWithSourceAwareTriggers/TransitionTable.cs) loads and looks up transitions.
+- [Recorder](RecordingWithSourceAwareTriggers/Recorder.cs) handles guarded dispatch and lifecycle callbacks.
+- [Trigger source tests](RecordingWithSourceAwareTriggers.Tests/TriggerSourceTests.cs) exercise the shipped XML, trigger identities, and configuration validation.

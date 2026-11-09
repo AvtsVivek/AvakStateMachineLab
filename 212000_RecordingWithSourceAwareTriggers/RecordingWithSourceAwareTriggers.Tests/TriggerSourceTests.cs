@@ -7,6 +7,11 @@ namespace RecordingWithSourceAwareTriggers.Tests;
 [TestClass]
 public sealed class TriggerSourceTests
 {
+    /// <summary>
+    /// Places two independent recorders in Recording, then varies only the source of Pause.
+    /// User must select Paused and Device must select Idle, proving source participates in
+    /// lookup even when the trigger name and current state are identical.
+    /// </summary>
     [TestMethod]
     public void SameNameAndState_DifferentSources_SelectDifferentTransitions()
     {
@@ -22,6 +27,11 @@ public sealed class TriggerSourceTests
         Assert.AreEqual(RecordingMode.Idle, deviceRecorder.CurrentState);
     }
 
+    /// <summary>
+    /// Enters Recording, then sends Stop from an undeclared source pairing and Pause with
+    /// a case-mismatched source. Both must return InvalidRequest and leave Recording active;
+    /// neither name-only fallback nor case-insensitive source matching is permitted.
+    /// </summary>
     [TestMethod]
     public void WrongOrUndeclaredSource_DoesNotFallbackToName()
     {
@@ -33,6 +43,11 @@ public sealed class TriggerSourceTests
         Assert.AreEqual(RecordingMode.Recording, recorder.CurrentState);
     }
 
+    /// <summary>
+    /// Sends catalog-declared Pause/Device while the recorder is still Idle.
+    /// Catalog membership authorizes a configuration identity, not a transition in every state,
+    /// so dispatch must return InvalidRequest and preserve Idle.
+    /// </summary>
     [TestMethod]
     public void DeclaredTriggerWithoutTransition_IsInvalid()
     {
@@ -41,6 +56,11 @@ public sealed class TriggerSourceTests
         Assert.AreEqual(RecordingMode.Idle, recorder.CurrentState);
     }
 
+    /// <summary>
+    /// Exercises a default trigger, whose source is null, and an explicitly whitespace-only source.
+    /// These are invalid arguments rather than unmatched identities, so dispatch must throw
+    /// ArgumentNullException and ArgumentException respectively before transition lookup.
+    /// </summary>
     [TestMethod]
     public void MissingTriggerSource_Throws()
     {
@@ -49,12 +69,21 @@ public sealed class TriggerSourceTests
         Assert.ThrowsExactly<ArgumentException>(() => recorder.TryHandle(new(RecordingRequest.Start, " ")));
     }
 
+    /// <summary>
+    /// Loads two Pause declarations with different sources and expects loading to complete without throwing.
+    /// This acceptance case establishes that uniqueness is defined by the full name/source pair, not name alone.
+    /// </summary>
     [TestMethod]
     public void Catalog_AllowsSameNameFromDifferentSources()
     {
         LoadCatalog("""<triggers><trigger name="Pause" source="User" /><trigger name="Pause" source="Device" /></triggers>""");
     }
 
+    /// <summary>
+    /// Runs one invalid catalog per row: duplicate identities, missing or empty sources,
+    /// unknown or numeric trigger names, nested elements, extra attributes, unexpected children,
+    /// and an incorrect root. Each is well-formed XML that must fail contract validation with FormatException.
+    /// </summary>
     [TestMethod]
     [DataRow("""<triggers><trigger name="Pause" source="User" /><trigger name="Pause" source="User" /></triggers>""")]
     [DataRow("""<triggers><trigger name="Pause" /></triggers>""")]
@@ -70,12 +99,22 @@ public sealed class TriggerSourceTests
         Assert.ThrowsExactly<FormatException>(() => LoadCatalog(xml));
     }
 
+    /// <summary>
+    /// Supplies a document type declaration with an internal entity used as a source value.
+    /// The XML reader must reject the DTD with XmlException before catalog validation;
+    /// even a local entity declaration must not be accepted by this configuration loader.
+    /// </summary>
     [TestMethod]
     public void Catalog_DtdIsProhibited()
     {
         Assert.ThrowsExactly<XmlException>(() => LoadCatalog("""<!DOCTYPE triggers [<!ENTITY x "User">]><triggers><trigger name="Pause" source="&x;" /></triggers>"""));
     }
 
+    /// <summary>
+    /// Uses a catalog containing only Pause/User and Stop/User, then varies one transition per row.
+    /// Missing, empty, or undeclared sources, including Stop/Device despite Stop/User being declared,
+    /// must throw FormatException. A declared Idle self-target keeps target validation out of the scenario.
+    /// </summary>
     [TestMethod]
     [DataRow("""<transition trigger="Pause" target="Idle" />""")]
     [DataRow("""<transition trigger="Pause" source="" target="Idle" />""")]
@@ -88,6 +127,11 @@ public sealed class TriggerSourceTests
         Assert.ThrowsExactly<FormatException>(() => TransitionTable.Load(stream, catalog));
     }
 
+    /// <summary>
+    /// Checks two independent null-argument contracts: the transition loader needs a catalog,
+    /// and the catalog loader needs an input stream. Both must throw ArgumentNullException
+    /// before attempting XML validation; null-forgiving syntax enables these intentional invalid inputs.
+    /// </summary>
     [TestMethod]
     public void NullCatalog_IsRejected()
     {
