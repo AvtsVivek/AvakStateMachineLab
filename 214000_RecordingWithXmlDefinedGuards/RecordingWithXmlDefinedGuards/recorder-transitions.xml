@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<recorder initial="Idle">
+  <triggers>
+    <trigger name="StartCapture" source="User" />
+    <trigger name="PauseCapture" source="User" />
+    <trigger name="PauseCapture" source="Device" />
+    <trigger name="ResumeCapture" source="User" />
+    <trigger name="StopCapture" source="User" />
+  </triggers>
+  <state name="Idle">
+    <transition trigger="StartCapture" source="User" target="Recording" guard="StartPermission" />
+  </state>
+  <state name="Recording">
+    <transition trigger="PauseCapture" source="User" target="Paused" guard="RecordingExit" />
+    <transition trigger="PauseCapture" source="Device" target="Idle" />
+    <transition trigger="StopCapture" source="User" target="Idle" />
+  </state>
+  <state name="Paused">
+    <transition trigger="ResumeCapture" source="User" target="Recording" />
+    <transition trigger="StopCapture" source="User" target="Idle" />
+  </state>
+</recorder>

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="RecordingWithXmlDefinedGuards.Tests/RecordingWithXmlDefinedGuards.Tests.csproj" />
+  <Project Path="RecordingWithXmlDefinedGuards/RecordingWithXmlDefinedGuards.csproj" />
+</Solution>
